@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="max-w-md mx-auto bg-white p-6 rounded">
+  <h2 class="text-xl mb-4">Reset password</h2>
+  <form method="post">
+    <label class="sr-only">New password</label>
+    <input name="password" type="password" placeholder="New password (6+ chars)" class="border p-2 w-full" />
+    <div class="mt-4">
+      <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Set password</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

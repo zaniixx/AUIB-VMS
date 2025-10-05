@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="bg-white p-6 rounded shadow max-w-4xl mx-auto">
+  <h2 class="text-2xl font-semibold mb-4">Users</h2>
+  <div class="mb-4">
+    Quick add:
+    <a class="ml-2 text-sm text-auib-accent" href="{{ url_for('admin.add_user') }}?role=student">Add Student</a>
+    <a class="ml-2 text-sm text-auib-accent" href="{{ url_for('admin.add_user') }}?role=club_leader">Add Club Leader</a>
+    <a class="ml-2 text-sm text-auib-accent" href="{{ url_for('admin.add_user') }}?role=officer">Add Officer</a>
+    <a class="ml-2 text-sm text-auib-accent" href="{{ url_for('admin.add_user') }}?role=admin">Add Admin</a>
+  </div>
+  <form method="get" class="mb-4 flex gap-2">
+    <input name="q" placeholder="search email..." value="{{ q or '' }}" class="border p-2" />
+    <button type="submit" class="px-3 py-1 border rounded">Search</button>
+  </form>
+  <table class="min-w-full bg-white">
+    <thead>
+      <tr>
+        <th class="px-4 py-2">Email</th>
+        <th class="px-4 py-2">Name</th>
+        <th class="px-4 py-2">Role</th>
+        <th class="px-4 py-2">Club</th>
+        <th class="px-4 py-2">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr class="border-t">
+        <td class="px-4 py-2">{{ u.email }}</td>
+        <td class="px-4 py-2">{{ u.name or '-' }}</td>
+        <td class="px-4 py-2">{{ u.role }}</td>
+        <td class="px-4 py-2">{{ u.club_id or '-' }}</td>
+        <td class="px-4 py-2">
+          <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="text-sm text-auib-accent">Edit</a>
+          |
+          <span class="inline-block">
+            <form method="post" action="{{ url_for('admin.delete_user', user_id=u.id) }}" onsubmit="return confirm('Delete user {{ u.email }}?');"><button type="submit" class="text-sm text-red-600 ml-2">Delete</button></form>
+          </span>
+          |
+          {% if u.role != 'admin' %}
+            <span class="inline-block"><form method="post" action="{{ url_for('admin.promote_user', user_id=u.id) }}"><button type="submit" class="text-sm text-green-600 ml-2">Promote</button></form></span>
+          {% else %}
+            <span class="inline-block"><form method="post" action="{{ url_for('admin.demote_user', user_id=u.id) }}"><button type="submit" class="text-sm text-yellow-600 ml-2">Demote</button></form></span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="px-4 py-2">No users found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if total is defined %}
+    <div class="mt-4 flex items-center justify-between">
+      <div>Showing page {{ page }} — total {{ total }} users</div>
+      <div class="flex gap-2">
+        {% if page > 1 %}
+          <a href="{{ url_for_page(page-1) }}" class="px-3 py-1 border rounded">Prev</a>
+        {% endif %}
+        {% if (page * per_page) < total %}
+          <a href="{{ url_for_page(page+1) }}" class="px-3 py-1 border rounded">Next</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

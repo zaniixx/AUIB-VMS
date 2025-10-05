@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="bg-white p-6 rounded-lg shadow max-w-3xl mx-auto">
+  <h2 class="text-2xl font-semibold mb-4">Submit Bulk Hours (Club Leader)</h2>
+  <form method="post" action="{{ url_for('club.submit_hours') }}" class="space-y-4">
+    <div>
+      <label for="project_name" class="block text-sm font-medium text-gray-700">Project Name</label>
+      <input id="project_name" name="project_name" required placeholder="Community Clean-up" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label for="date_range" class="block text-sm font-medium text-gray-700">Date Range</label>
+      <input id="date_range" name="date_range" placeholder="2025-09-01 to 2025-09-05" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+      <textarea id="description" name="description" placeholder="Brief description of the project" class="mt-1 block w-full border rounded px-3 py-2"></textarea>
+    </div>
+    <div>
+      <label for="hours_data" class="block text-sm font-medium text-gray-700">Hours Data (JSON)</label>
+      <textarea id="hours_data" name="hours_data" rows="6" placeholder='[{"email": "a@b", "hours": 2.5}]' class="mt-1 block w-full border rounded px-3 py-2"></textarea>
+    </div>
+    <div>
+      <button type="submit" class="bg-auib-accent text-white px-4 py-2 rounded">Submit</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

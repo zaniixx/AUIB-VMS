@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="bg-white p-6 rounded-lg shadow max-w-3xl mx-auto">
+  <h2 class="text-2xl font-semibold mb-4">Generate Reports</h2>
+  <form method="get" action="{{ url_for('officer.reports') }}" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Start Date</label>
+      <input name="start_date" placeholder="YYYY-MM-DD" class="mt-1 block w-full border rounded px-3 py-2" value="{{ request.args.get('start_date','') }}" />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">End Date</label>
+      <input name="end_date" placeholder="YYYY-MM-DD" class="mt-1 block w-full border rounded px-3 py-2" value="{{ request.args.get('end_date','') }}" />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Student Email</label>
+      <input name="student_email" placeholder="student@auib.edu" class="mt-1 block w-full border rounded px-3 py-2" value="{{ request.args.get('student_email','') }}" />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Club ID</label>
+      <input name="club_id" placeholder="club_..." class="mt-1 block w-full border rounded px-3 py-2" value="{{ request.args.get('club_id','') }}" />
+    </div>
+    <div class="md:col-span-2">
+      <label class="block text-sm font-medium text-gray-700">Report Type</label>
+  <select name="type" title="Report type" class="mt-1 block w-full border rounded px-3 py-2">
+        <option value="general" {% if request.args.get('type')=='general' %}selected{% endif %}>General Hours Report</option>
+        <option value="person_summary" {% if request.args.get('type')=='person_summary' %}selected{% endif %}>Person Summary (single row)</option>
+        <option value="person_detailed" {% if request.args.get('type')=='person_detailed' %}selected{% endif %}>Person Detailed</option>
+      </select>
+    </div>
+    <div class="md:col-span-2">
+      <button type="submit" class="bg-auib-accent text-white px-4 py-2 rounded">Download CSV</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+download/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtualenv
+.venv/
+venv/
+ENV/
+env/
+.venv_test/
+
+# Pipenv
+Pipfile.lock
+
+# Pyenv
+.python-version
+
+# pyenv-virtualenv
+.python-version
+
+# VS Code
+.vscode/
+.vscode/*
+
+# PyCharm
+.idea/
+
+# Editors
+*~
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Logs
+*.log
+logs/
+
+# SQLite
+*.sqlite
+*.db
+instance/
+
+# dotenv
+.env
+.env.*
+
+# Secret keys & credentials
+secrets.yml
+*.pem
+*.key
+
+# MailHog binary (local dev)
+MailHog.exe
+MailHog
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# wheel
+*.whl
+
+# compiled assets
+*.pyc
+
+# temporary files
+tmp/
+
+# JetBrains
+.idea/
+
+# node
+node_modules/
+
+# others
+*.bak
+
+# Keep the gitignore itself
+!.gitignore

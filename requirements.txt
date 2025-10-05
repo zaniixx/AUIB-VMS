@@ -1,0 +1,9 @@
+flask
+flask-login
+pyjwt
+pandas
+werkzeug
+openpyxl
+SQLAlchemy>=2.0
+alembic
+flask-mailman

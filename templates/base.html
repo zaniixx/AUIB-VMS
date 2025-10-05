@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <title>AUIB Volunteers Management System (VMS)</title>
+    <style>
+      /* small visual tweaks */
+      .auib-blue { background-color: #0b4f6c; }
+      .auib-accent { color: #0b78a1; }
+      .bg-auib-accent { background-color: #0b78a1; }
+      .text-auib-accent { color: #0b78a1; }
+      .btn { transition: background-color .12s ease-in-out; }
+      .btn:hover { filter: brightness(.95); }
+    </style>
+  </head>
+  <body class="bg-gray-50 min-h-screen font-sans text-gray-800">
+    <header class="auib-blue text-white">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+  <a href="{{ url_for('auth.home_page') }}" class="flex items-center space-x-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6l4 2" />
+          </svg>
+          <div>
+            <div class="font-bold text-lg">AUIB Volunteers Management System</div>
+            <div class="text-sm text-gray-100">VMS</div>
+          </div>
+        </a>
+        <nav class="flex items-center space-x-4">
+          {% if current_user.is_authenticated %}
+            <span class="px-3 py-1 bg-white text-auib-accent rounded text-sm">{{ current_user.email }} ({{ current_user.role }})</span>
+            <a href="{{ url_for('auth.logout') }}" class="text-sm text-white hover:underline">Logout</a>
+          {% else %}
+            <a href="{{ url_for('auth.login') }}" class="text-sm text-white hover:underline">Login</a>
+          {% endif %}
+        </nav>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-6">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="space-y-2 mb-4">
+            {% for m in messages %}
+              <div class="rounded border-l-4 border-yellow-400 bg-yellow-50 p-3 text-yellow-800">{{ m }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block body %}{% endblock %}
+    </main>
+
+    <footer class="border-t bg-white mt-8">
+  <div class="max-w-6xl mx-auto px-6 py-4 text-sm text-gray-600">&copy; {{ current_year if current_year else "2025" }} AUIB Volunteers Management System (VMS) made with ❤️ by Zanix</div>
+    </footer>
+  </body>
+  </html>

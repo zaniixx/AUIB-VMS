@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="bg-white p-6 rounded shadow max-w-2xl mx-auto">
+  <h2 class="text-2xl font-semibold mb-4">{{ action }} User</h2>
+  <form method="post" class="space-y-4">
+    <div>
+      <label class="block text-sm">Email</label>
+      <input name="email" value="{{ user.email if user else '' }}" required placeholder="user@example.com" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-sm">Name</label>
+      <input name="name" value="{{ user.name if user else '' }}" placeholder="Full name" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-sm">Role</label>
+      <select name="role" title="User role" class="mt-1 block w-full border rounded px-3 py-2">
+        <option value="student" {% if (user and user.role=='student') or (not user and prefill_role=='student') %}selected{% endif %}>Student</option>
+        <option value="club_leader" {% if (user and user.role=='club_leader') or (not user and prefill_role=='club_leader') %}selected{% endif %}>Club Leader</option>
+        <option value="officer" {% if (user and user.role=='officer') or (not user and prefill_role=='officer') %}selected{% endif %}>Officer</option>
+        <option value="admin" {% if (user and user.role=='admin') or (not user and prefill_role=='admin') %}selected{% endif %}>Admin</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm">Club ID (optional)</label>
+      <input name="club_id" value="{{ user.club_id if user else '' }}" placeholder="club_..." class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-sm">Password (leave blank to keep)</label>
+      <input name="password" type="password" placeholder="secret" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <button type="submit" class="bg-auib-accent text-white px-4 py-2 rounded">{{ action }}</button>
+      <a href="{{ url_for('admin.users') }}" class="ml-4">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

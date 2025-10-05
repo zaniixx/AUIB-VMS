@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="bg-white p-6 rounded shadow max-w-3xl mx-auto">
+  <h2 class="text-2xl font-semibold mb-4">Settings</h2>
+  <form method="post" class="space-y-4">
+    <div>
+      <label for="smtp_host" class="block text-sm font-medium">SMTP Host</label>
+      <input id="smtp_host" name="smtp_host" title="SMTP host" placeholder="127.0.0.1" value="{{ cfg.SMTP_HOST }}" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label for="smtp_port" class="block text-sm font-medium">SMTP Port</label>
+      <input id="smtp_port" name="smtp_port" title="SMTP port" placeholder="1025" value="{{ cfg.SMTP_PORT }}" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label for="smtp_user" class="block text-sm font-medium">SMTP User</label>
+      <input id="smtp_user" name="smtp_user" title="SMTP username" placeholder="user@example.com" value="{{ cfg.SMTP_USER }}" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label for="smtp_pass" class="block text-sm font-medium">SMTP Pass</label>
+      <input id="smtp_pass" name="smtp_pass" title="SMTP password" value="{{ cfg.SMTP_PASS }}" type="password" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label for="smtp_use_tls" class="block text-sm font-medium">Use TLS?</label>
+      <input id="smtp_use_tls" type="checkbox" name="smtp_use_tls" value="1" {% if cfg.SMTP_USE_TLS=='1' %}checked{% endif %} />
+    </div>
+    <div>
+      <label for="smtp_use_ssl" class="block text-sm font-medium">Use SSL?</label>
+      <input id="smtp_use_ssl" type="checkbox" name="smtp_use_ssl" value="1" {% if cfg.SMTP_USE_SSL=='1' %}checked{% endif %} />
+    </div>
+    <div>
+      <label for="mail_default_sender" class="block text-sm font-medium">Default sender</label>
+      <input id="mail_default_sender" name="mail_default_sender" title="Default sender address" placeholder="no-reply@example.local" value="{{ cfg.MAIL_DEFAULT_SENDER }}" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <button type="submit" class="bg-auib-accent text-white px-4 py-2 rounded">Save</button>
+    </div>
+  </form>
+  <hr class="my-4" />
+  <h3 class="font-semibold">Send test email</h3>
+  <form method="post" action="{{ url_for('admin.test_mail') }}" class="mt-2">
+    <div>
+      <label for="to" class="block text-sm">To</label>
+      <input id="to" name="to" title="Recipient email" value="{{ current_user.email }}" placeholder="you@example.com" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label for="subject" class="block text-sm">Subject</label>
+      <input id="subject" name="subject" value="Test from VMS" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label for="body" class="block text-sm">Body</label>
+      <textarea id="body" name="body" title="Email body" class="mt-1 block w-full border rounded px-3 py-2">This is a test</textarea>
+    </div>
+    <div>
+      <button type="submit" class="bg-auib-accent text-white px-4 py-2 rounded">Send test</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

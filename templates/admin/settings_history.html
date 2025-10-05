@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Settings Change History</h2>
+  <p>Recent changes to system settings.</p>
+  <table class="table-auto w-full">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Key</th>
+        <th>Old</th>
+        <th>New</th>
+        <th>By</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in audits %}
+      <tr>
+        <td>{{ a.changed_at }}</td>
+        <td>{{ a.key }}</td>
+        <td><pre class="text-xs">{{ a.old_value or '' }}</pre></td>
+        <td><pre class="text-xs">{{ a.new_value or '' }}</pre></td>
+        <td>{{ a.changed_by or 'system' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan=5>No settings changes recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

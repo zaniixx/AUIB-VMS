@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="bg-white p-6 rounded shadow max-w-6xl mx-auto">
+  <h2 class="text-2xl font-semibold mb-4">Email Logs</h2>
+
+  <form method="get" class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+    <label class="sr-only">Search recipient</label>
+    <input type="text" name="q" placeholder="recipient contains..." value="{{ q or '' }}" class="border p-2" />
+    <label class="sr-only">Status</label>
+    <select name="status" class="border p-2" title="Status filter">
+      <option value="">All status</option>
+      <option value="SENT" {% if status=='SENT' %}selected{% endif %}>SENT</option>
+      <option value="QUEUED" {% if status=='QUEUED' %}selected{% endif %}>QUEUED</option>
+      <option value="FAILED" {% if status=='FAILED' %}selected{% endif %}>FAILED</option>
+    </select>
+    <label class="sr-only">Start date</label>
+    <input type="date" name="start" value="{{ start or '' }}" class="border p-2" title="Start date" />
+    <label class="sr-only">End date</label>
+    <input type="date" name="end" value="{{ end or '' }}" class="border p-2" title="End date" />
+    <div class="md:col-span-4 flex gap-2">
+      <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Filter</button>
+      <a href="{{ url_for('admin.email_logs') }}" class="px-4 py-2 border rounded">Reset</a>
+    </div>
+  </form>
+
+  <div class="overflow-auto">
+    <table class="min-w-full bg-white">
+      <thead>
+        <tr>
+          <th class="px-4 py-2">When</th>
+          <th class="px-4 py-2">Recipient</th>
+          <th class="px-4 py-2">Subject</th>
+          <th class="px-4 py-2">Status</th>
+          <th class="px-4 py-2">Event</th>
+          <th class="px-4 py-2">Error</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in logs %}
+        <tr class="border-t">
+          <td class="px-4 py-2">{{ l.created_at }}</td>
+          <td class="px-4 py-2">{{ l.recipient }}</td>
+          <td class="px-4 py-2">{{ l.subject }}</td>
+          <td class="px-4 py-2">{{ l.status }}</td>
+          <td class="px-4 py-2">{{ l.event_id or '-' }}</td>
+          <td class="px-4 py-2">{{ l.error or '' }}</td>
+        </tr>
+        {% else %}
+        <tr><td class="px-4 py-2" colspan="6">No email logs found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total is defined %}
+  <div class="mt-4 flex items-center justify-between">
+    <div>Showing page {{ page }} — total {{ total }} records</div>
+    <div class="flex gap-2">
+      {% if page > 1 %}
+        <a href="{{ url_for_page(page-1) }}" class="px-3 py-1 border rounded">Prev</a>
+      {% endif %}
+      {% if (page * per_page) < total %}
+        <a href="{{ url_for_page(page+1) }}" class="px-3 py-1 border rounded">Next</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

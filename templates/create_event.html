@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="bg-white p-6 rounded-lg shadow max-w-3xl mx-auto">
+  <h2 class="text-2xl font-semibold mb-4">Create Event</h2>
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('officer.create_event') }}" class="space-y-4">
+    <div>
+  <label class="block text-sm font-medium text-gray-700" for="name">Event Name</label>
+  <input id="name" name="name" required placeholder="Community Cleanup" title="Event name" class="mt-1 block w-full border rounded px-3 py-2" />
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Date</label>
+        <input name="date" placeholder="YYYY-MM-DD" class="mt-1 block w-full border rounded px-3 py-2" />
+      </div>
+      <div>
+  <label class="block text-sm font-medium text-gray-700" for="location">Location</label>
+  <input id="location" name="location" placeholder="Main Quad" title="Location" class="mt-1 block w-full border rounded px-3 py-2" />
+      </div>
+    </div>
+    <div>
+  <label class="block text-sm font-medium text-gray-700" for="description">Description</label>
+  <textarea id="description" name="description" placeholder="Short description of the event" title="Description" class="mt-1 block w-full border rounded px-3 py-2"></textarea>
+    </div>
+    <div>
+  <label class="block text-sm font-medium text-gray-700">Volunteer File (CSV or Excel)</label>
+      <div class="text-sm text-gray-500">File must contain an <code>Email</code> or <code>email</code> column. Upload example CSV for testing.</div>
+  <input type="file" id="file" name="file" title="Volunteer CSV or Excel file" accept=".csv,.xlsx,.xls" class="mt-2" />
+    </div>
+    <div>
+      <button type="submit" class="bg-auib-accent text-white px-4 py-2 rounded">Create</button>
+    </div>
+  </form>
+
+  {% if links %}
+    <div class="mt-6">
+      <h3 class="font-semibold">Generated Links</h3>
+      <p class="text-sm text-gray-500 mb-2">Copy these links to email to volunteers (they expire based on configured token expiry):</p>
+  <textarea readonly title="Generated links" aria-label="Generated links" class="w-full h-40 border rounded p-3 bg-gray-50">{% for l in links %}{{ l }}
+{% endfor %}</textarea>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
