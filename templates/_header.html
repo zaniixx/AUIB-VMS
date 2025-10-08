@@ -1,0 +1,35 @@
+<header class="auib-blue text-white">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+    <a href="{{ url_for('auth.home_page') }}" class="flex items-center space-x-3">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6l4 2" />
+      </svg>
+      <div>
+        <div class="font-bold text-lg">AUIB Volunteers Management System</div>
+        <div class="text-sm text-gray-100">VMS</div>
+      </div>
+    </a>
+
+    <nav class="flex items-center space-x-4">
+      {% if current_user.is_authenticated %}
+        {% if current_user.role == 'admin' %}
+          <a href="{{ url_for('admin.settings') }}" class="text-sm text-white hover:underline">Settings</a>
+          <a href="{{ url_for('admin.users') }}" class="text-sm text-white hover:underline">Users</a>
+        {% elif current_user.role == 'officer' %}
+          <a href="{{ url_for('officer.create_event') }}" class="text-sm text-white hover:underline">Create Event</a>
+          <a href="{{ url_for('admin.email_logs') }}" class="text-sm text-white hover:underline">Email Logs</a>
+        {% elif current_user.role in ('club_leader','clubleader') %}
+          <a href="{{ url_for('club.bulk_submit') }}" class="text-sm text-white hover:underline">Bulk Submit</a>
+        {% else %}
+          <a href="{{ url_for('auth.volunteer_dashboard') }}" class="text-sm text-white hover:underline">My Dashboard</a>
+        {% endif %}
+
+        <span class="px-3 py-1 bg-white text-auib-accent rounded text-sm">{{ current_user.email }} ({{ current_user.role }})</span>
+        <a href="{{ url_for('auth.logout') }}" class="text-sm text-white hover:underline">Logout</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="text-sm text-white hover:underline">Login</a>
+        <a href="{{ url_for('auth.register') }}" class="text-sm text-white hover:underline">Register</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>

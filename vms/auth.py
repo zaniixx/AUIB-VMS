@@ -49,8 +49,11 @@ def home_page():
             return render_template('home_officer.html')
         if role in ('club_leader', 'clubleader'):
             return render_template('home_clubleader.html')
-        # default for students/volunteers
-        return render_template('home_volunteer.html')
+        # default for students/volunteers: try to provide a next upcoming event preview
+        db = get_db()
+        now = datetime.utcnow()
+        next_event = db.query(models.Event).filter(models.Event.start_ts != None).filter(models.Event.start_ts > now).order_by(models.Event.start_ts).first()
+        return render_template('home_volunteer.html', next_event=next_event)
     return render_template('home_guest.html')
 
 

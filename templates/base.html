@@ -16,27 +16,7 @@
     </style>
   </head>
   <body class="bg-gray-50 min-h-screen font-sans text-gray-800">
-    <header class="auib-blue text-white">
-      <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-  <a href="{{ url_for('auth.home_page') }}" class="flex items-center space-x-3">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6l4 2" />
-          </svg>
-          <div>
-            <div class="font-bold text-lg">AUIB Volunteers Management System</div>
-            <div class="text-sm text-gray-100">VMS</div>
-          </div>
-        </a>
-        <nav class="flex items-center space-x-4">
-          {% if current_user.is_authenticated %}
-            <span class="px-3 py-1 bg-white text-auib-accent rounded text-sm">{{ current_user.email }} ({{ current_user.role }})</span>
-            <a href="{{ url_for('auth.logout') }}" class="text-sm text-white hover:underline">Logout</a>
-          {% else %}
-            <a href="{{ url_for('auth.login') }}" class="text-sm text-white hover:underline">Login</a>
-          {% endif %}
-        </nav>
-      </div>
-    </header>
+    {% include '_header.html' %}
 
     <main class="max-w-6xl mx-auto p-6">
       {% with messages = get_flashed_messages() %}
