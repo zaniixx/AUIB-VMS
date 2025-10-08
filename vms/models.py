@@ -35,10 +35,27 @@ class Event(Base):
     id = Column(String, primary_key=True)
     officer_id = Column(String, ForeignKey('users.id'))
     name = Column(String)
-    date = Column(String)
+    # replace legacy `date` string with explicit start/end timestamps
+    start_ts = Column(DateTime, nullable=True)
+    end_ts = Column(DateTime, nullable=True)
     location = Column(String)
     description = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    @property
+    def display_date(self):
+        # return a friendly single-line representation of start/end
+        try:
+            if self.start_ts and self.end_ts:
+                if self.start_ts.date() == self.end_ts.date():
+                    return f"{self.start_ts.strftime('%Y-%m-%d %H:%M')} - {self.end_ts.strftime('%H:%M')}"
+                return f"{self.start_ts.strftime('%Y-%m-%d %H:%M')} - {self.end_ts.strftime('%Y-%m-%d %H:%M')}"
+            if self.start_ts:
+                return self.start_ts.strftime('%Y-%m-%d %H:%M')
+            return ''
+        except Exception:
+            return str(self.start_ts or '')
+
 
 # Utility helpers (compat shim for previous in-memory helpers)
 import re
@@ -204,4 +221,3 @@ class SettingAudit(Base):
     changed_by = Column(String, nullable=True)
     changed_at = Column(DateTime, default=datetime.utcnow)
 
- 

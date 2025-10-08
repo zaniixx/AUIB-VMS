@@ -27,20 +27,46 @@ def create_event():
     links = None
     if request.method == 'POST':
         name = request.form.get('name')
-        date = request.form.get('date')
+        start_raw = request.form.get('start')
+        end_raw = request.form.get('end')
         location = request.form.get('location')
         description = request.form.get('description')
         file = request.files.get('file')
         if not file:
             flash('File required')
-            return render_template('create_event.html', links=None)
-        # create event
-        event_id = models.Event
-        # for now keep generating IDs on the Python side
+            return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description)
+
+        # parse start/end timestamps from datetime-local inputs
+        sd = None
+        ed = None
+        from datetime import datetime
+        def _try_parse(s):
+            if not s:
+                return None
+            try:
+                # datetime-local typically looks like 'YYYY-MM-DDTHH:MM' or with seconds
+                return datetime.fromisoformat(s)
+            except Exception:
+                try:
+                    return datetime.fromisoformat(s.replace('T', ' '))
+                except Exception:
+                    return None
+        sd = _try_parse(start_raw)
+        ed = _try_parse(end_raw)
+
+        # validate start exists and end is after start
+        if not sd:
+            flash('Start date/time is required and must be a valid datetime')
+            return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description)
+        if ed and ed < sd:
+            flash('End date/time must be after start date/time')
+            return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description)
+
+        # create event record with start/end datetimes
         import uuid
         eid = 'e_' + str(uuid.uuid4())
         db = get_db()
-        ev = models.Event(id=eid, officer_id=current_user.id, name=name, date=date, location=location, description=description)
+        ev = models.Event(id=eid, officer_id=current_user.id, name=name, start_ts=sd, end_ts=ed, location=location, description=description)
         db.add(ev)
         db.commit()
 
@@ -54,22 +80,32 @@ def create_event():
                 df = pd.read_excel(io.BytesIO(data))
         except Exception as e:
             flash('Failed to read file: ' + str(e))
-            return render_template('create_event.html', links=None)
+            return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description)
         email_col = 'Email' if 'Email' in df.columns else ('email' if 'email' in df.columns else None)
         if not email_col:
             flash("File must contain 'Email' column")
-            return render_template('create_event.html', links=None)
+            return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description)
         df['email_norm'] = df[email_col].astype(str).str.strip().str.lower()
+        # try to capture a name column if present for user-friendly output
+        name_col = None
+        if 'Name' in df.columns:
+            name_col = 'Name'
+        elif 'name' in df.columns:
+            name_col = 'name'
         df = df[df['email_norm'].apply(models.is_valid_email)]
         df = df.drop_duplicates(subset=['email_norm'])
         links = []
+        links_info = []
         from .log import make_logging_jwt
         email_map = {}
-        for e in df['email_norm'].tolist():
+        for idx, row in df.iterrows():
+            e = str(row['email_norm'])
+            display_name = (str(row[name_col]).strip() if name_col and not pd.isna(row.get(name_col)) else '') if name_col else ''
             token = make_logging_jwt(eid, e, current_app.config.get('JWT_EXP_HOURS',24))
             link = url_for('log.log_via_jwt', jwt_token=token, _external=True)
             links.append(link)
             email_map[e] = link
+            links_info.append({'name': display_name or e.split('@')[0], 'email': e, 'link': link})
         # attempt to send emails via the configured Mail subsystem (if initialized)
         sent = 0
         failed = 0
@@ -77,8 +113,10 @@ def create_event():
             from .email import send_email
             subj = f"Logging link for event: {name}"
             default_sender = current_app.config.get('MAIL_DEFAULT_SENDER')
+            # human-friendly event date for emails
+            ev_display = ev.display_date if hasattr(ev, 'display_date') else (start_raw or '')
             for recipient, lnk in email_map.items():
-                body = f"Dear volunteer,\n\nYou have been invited to log volunteer hours for the event '{name}'. Use the link below to start/stop your session:\n\n{lnk}\n\nThis link expires in {current_app.config.get('JWT_EXP_HOURS',24)} hours.\n\nThank you,\nAUIB VMS"
+                body = f"Dear volunteer,\n\nYou have been invited to log volunteer hours for the event '{name}' ({ev_display}). Use the link below to start/stop your session:\n\n{lnk}\n\nThis link expires in {current_app.config.get('JWT_EXP_HOURS',24)} hours.\n\nThank you,\nAUIB VMS"
                 try:
                     send_email(subj, body, recipient, sender=default_sender, async_send=True)
                     sent += 1
@@ -89,7 +127,8 @@ def create_event():
             current_app.logger.info('Mail subsystem not available; skipping auto-email send')
 
         flash(f'Event created with {len(links)} unique valid emails — emailed: {sent}, failed: {failed}')
-    return render_template('create_event.html', links=links)
+    # pass form defaults back to template so values persist on validation errors / after POST
+    return render_template('create_event.html', links=links, links_info=(locals().get('links_info') if 'links_info' in locals() else None), name=(locals().get('name') if 'name' in locals() else None), start=(locals().get('start_raw') if 'start_raw' in locals() else None), end=(locals().get('end_raw') if 'end_raw' in locals() else None), location=(locals().get('location') if 'location' in locals() else None), description=(locals().get('description') if 'description' in locals() else None))
 
 
 @bp.route('/approvals', methods=['GET','POST'])

@@ -1,0 +1,14 @@
+[User|id: String (PK);email: String {unique, not null};password_hash: String;role: String;name: String;club_id: String|+get_id();+is_active():bool;+is_authenticated():bool]
+[Event|id: String (PK);officer_id: String (FK -> users.id);name: String;start_ts: DateTime;end_ts: DateTime;location: String;description: Text;created_at: DateTime|+display_date()]
+[TimeLog|id: String (PK);student_email: String;event_id: String (FK -> events.id);start_ts: String;stop_ts: String;calculated_hours: Float;status: String;marker: String]
+[BulkSubmission|id: String (PK);club_leader_id: String (FK -> users.id);project_name: String;date_range: String;description: Text;status: String;hours_data: Text;rejection_reason: Text;created_at: DateTime]
+[EmailLog|id: String (PK);recipient: String;subject: String;body_preview: Text;status: String;error: Text;event_id: String (FK -> events.id);created_at: DateTime]
+[Setting|key: String (PK);value: Text]
+[SettingAudit|id: String (PK);key: String;old_value: Text;new_value: Text;changed_by: String;changed_at: DateTime]
+
+[User]1-*[Event]
+[Event]1-*[TimeLog]
+[User]1-*[BulkSubmission]
+[Event]1-*[EmailLog]
+
+// Note: FK annotations shown inline; fields and simple methods included for clarity.
