@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: vms
+      POSTGRES_PASSWORD: vms_pass
+      POSTGRES_DB: vms
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Use SQLAlchemy-compatible scheme 'postgresql://' so the dialect driver is resolved
+      DATABASE_URL: postgresql://vms:vms_pass@db:5432/vms
+      VMS_SECRET_KEY: replace-with-secure-key
+      # Pool sizing tuned for moderate concurrency. pool_size is per-process.
+      DB_POOL_SIZE: '10'
+      DB_MAX_OVERFLOW: '20'
+      DB_POOL_TIMEOUT: '60'
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --timeout=3 http://localhost:8000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:

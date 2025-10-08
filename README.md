@@ -114,15 +114,39 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1 -Install -Seed
 
 Email configuration
 -------------------
-The app supports sending emails using Flask-Mailman (recommended). To enable automatic sending of JWT links, set these environment variables before starting the app:
+The app supports sending emails using Flask-Mailman (recommended). To enable automatic sending of JWT links, configure SMTP settings through the admin panel or set these environment variables before starting the app:
 
-- `SMTP_HOST` — SMTP server host (e.g. smtp.sendgrid.net)
+- `SMTP_HOST` — SMTP server host (e.g. smtp.gmail.com)
 - `SMTP_PORT` — SMTP server port (e.g. 587)
-- `SMTP_USER` — SMTP username (if required)
-- `SMTP_PASS` — SMTP password (if required)
+- `SMTP_USER` — SMTP username/email address
+- `SMTP_PASS` — SMTP password or App Password
 - `SMTP_USE_TLS` — set to `1` to enable STARTTLS
 - `SMTP_USE_SSL` — set to `1` to enable SSL socket
 - `MAIL_DEFAULT_SENDER` — optional default From address
+
+### Gmail Setup
+1. Enable 2-Factor Authentication on your Google account
+2. Generate an App Password: https://support.google.com/accounts/answer/185833
+3. Use these settings:
+   - **SMTP Host:** smtp.gmail.com
+   - **SMTP Port:** 587
+   - **Username:** your-gmail@gmail.com
+   - **Password:** [your 16-character App Password]
+   - **Use TLS:** ✅ Enabled
+   - **Use SSL:** ❌ Disabled
+
+### Outlook Setup
+1. If you have 2FA enabled, create an App Password: https://support.microsoft.com/en-us/account-billing/using-app-passwords-with-apps-that-don-t-support-two-step-verification-5896ed9b-4263-e681-128a-a6f2979a7944
+2. Use these settings:
+   - **SMTP Host:** smtp-mail.outlook.com
+   - **SMTP Port:** 587
+   - **Username:** your-email@outlook.com
+   - **Password:** [your password or App Password]
+   - **Use TLS:** ✅ Enabled
+   - **Use SSL:** ❌ Disabled
+
+### Testing Email Configuration
+After configuring SMTP settings, use the "Test Email Configuration" form in the admin settings page to verify your setup is working correctly.
 
 If `flask-mailman` is not installed, the app will fall back to displaying generated links and will log that email features are disabled. For production, use a transactional email provider and a secrets manager for credentials.
 

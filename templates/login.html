@@ -1,20 +1,58 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Login{% endblock %}
+
 {% block body %}
-<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow">
-  <h2 class="text-2xl font-semibold mb-4">Sign in</h2>
-  <form method="post" action="{{ url_for('auth.login') }}" class="space-y-4">
-    <div>
-      <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-      <input id="email" name="email" type="email" required class="mt-1 block w-full border rounded px-3 py-2" />
+<div class="narrow-wrapper">
+  {% call ui.card(title='Sign In to AUIB VMS', subtitle='Welcome back! Enter your credentials to continue.') %}
+    <form method="POST" action="{{ url_for('auth.login') }}" data-validate>
+      {{ ui.form_input(
+        name='email',
+        label='Email Address',
+        type='email',
+        required=true,
+        placeholder='your.email@auib.edu',
+        autocomplete='email'
+      ) }}
+
+      {{ ui.form_input(
+        name='password',
+        label='Password',
+        type='password',
+        required=true,
+        placeholder='Enter your password',
+        autocomplete='current-password'
+      ) }}
+
+      <div class="form-group">
+        <button type="submit" class="btn btn--primary btn--full">
+          Sign In
+        </button>
+      </div>
+
+      <div class="text-center">
+        <a href="{{ url_for('auth.forgot_password') }}">Forgot your password?</a>
+      </div>
+    </form>
+
+    <hr style="margin: var(--space-6) 0; border: none; border-top: 1px solid var(--color-gray-200);">
+
+    <div class="text-center">
+      <p style="margin-bottom: var(--space-3); color: var(--color-gray-600); font-size: var(--text-sm);">
+        Don't have an account?
+      </p>
+      <a href="{{ url_for('auth.register') }}" class="btn btn--outline btn--full">
+        Create New Account
+      </a>
     </div>
-    <div>
-      <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-      <input id="password" name="password" type="password" required class="mt-1 block w-full border rounded px-3 py-2" />
-    </div>
-    <div>
-      <button type="submit" class="w-full bg-auib-accent text-white px-4 py-2 rounded">Login</button>
-    </div>
-  </form>
-  <div class="mt-4 text-sm text-gray-600">Demo accounts: officer@auib.edu / officerpass, leader@club.auib / leaderpass, student@auib.edu / studentpass</div>
+  {% endcall %}
+
+  <!-- Demo Accounts Info -->
+  {{ ui.alert(
+    'Try these demo accounts: Admin (admin@auib.edu / admin123), Officer (officer@auib.edu / officer123), Club Leader (leader.tech@auib.edu / leader123), Student (student@auib.edu / student123)',
+    type='info',
+    title='Demo Credentials'
+  ) }}
 </div>
 {% endblock %}

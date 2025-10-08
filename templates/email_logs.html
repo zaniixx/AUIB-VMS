@@ -1,27 +1,115 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
 
-{% block content %}
-  <h2 class="text-2xl font-semibold mb-4">Recent Email Sends</h2>
-  <table class="min-w-full bg-white">
-    <thead>
-      <tr>
-        <th class="px-4 py-2">When</th>
-        <th class="px-4 py-2">Recipient</th>
-        <th class="px-4 py-2">Subject</th>
-        <th class="px-4 py-2">Status</th>
-        <th class="px-4 py-2">Event</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for l in logs %}
-      <tr class="border-t">
-        <td class="px-4 py-2">{{ l.created_at }}</td>
-        <td class="px-4 py-2">{{ l.recipient }}</td>
-        <td class="px-4 py-2">{{ l.subject }}</td>
-        <td class="px-4 py-2">{{ l.status }}</td>
-        <td class="px-4 py-2">{{ l.event_id or '-' }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{% block title %}Email Logs{% endblock %}
+
+{% block body %}
+<div class="content-wrapper">
+  <div style="margin-bottom: var(--space-8);">
+    <h1 style="margin-bottom: var(--space-2);">Email Logs</h1>
+    <p style="color: var(--color-gray-600);">
+      View email delivery status and troubleshoot invitation issues.
+    </p>
+  </div>
+
+  {% if logs %}
+    {% call ui.table_wrapper() %}
+      <thead>
+        <tr>
+          <th>Sent At</th>
+          <th>Recipient</th>
+          <th>Subject</th>
+          <th>Status</th>
+          <th>Event</th>
+          <th>Error</th>
+        </tr>
+      </thead>
+      <tbody>
+        {%- for l in logs %}
+        <tr>
+          <td>
+            <div style="font-size: var(--text-sm);">
+              {{ l.created_at.strftime('%Y-%m-%d %H:%M') if l.created_at else '—' }}
+            </div>
+          </td>
+          <td>
+            <div style="font-weight: var(--font-medium);">{{ l.recipient }}</div>
+          </td>
+          <td>
+            <div style="font-size: var(--text-sm); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              {{ l.subject }}
+            </div>
+          </td>
+          <td>
+            {{ ui.status_badge(l.status) }}
+          </td>
+          <td>
+            <div style="font-size: var(--text-sm); color: var(--color-gray-600);">
+              {{ l.event_id if l.event_id else '—' }}
+            </div>
+          </td>
+          <td>
+            {% if l.error %}
+              <details style="max-width: 200px;">
+                <summary style="cursor: pointer; color: var(--color-error-600); font-size: var(--text-sm);">
+                  View Error
+                </summary>
+                <p style="font-size: var(--text-xs); color: var(--color-gray-600); margin-top: var(--space-1); word-break: break-word;">
+                  {{ l.error }}
+                </p>
+              </details>
+            {% else %}
+              <span style="color: var(--color-gray-400);">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {%- endfor %}
+      </tbody>
+    {% endcall %}
+
+    <!-- Pagination info if needed -->
+    {% if logs|length >= 50 %}
+      <div style="margin-top: var(--space-4); text-align: center;">
+        {{ ui.alert(
+          'Showing the 50 most recent email logs. Contact an administrator to view older logs.',
+          type='info'
+        ) }}
+      </div>
+    {% endif %}
+
+  {% else %}
+    {% call ui.card(title='No Email Logs') %}
+      {{ ui.empty_state(
+        'No Emails Sent Yet',
+        'Email logs will appear here once the system starts sending invitation emails.'
+      ) }}
+    {% endcall %}
+  {% endif %}
+
+  <!-- Email Status Legend -->
+  <div style="margin-top: var(--space-8);">
+    {% call ui.card(title='Email Status Guide', compact=true) %}
+      <dl style="display: flex; flex-direction: column; gap: var(--space-3);">
+        <div style="display: flex; align-items: start; gap: var(--space-2);">
+          {{ ui.badge('SENT', 'success') }}
+          <dd style="font-size: var(--text-sm); color: var(--color-gray-600);">
+            Email was successfully delivered to the recipient's mail server.
+          </dd>
+        </div>
+        <div style="display: flex; align-items: start; gap: var(--space-2);">
+          {{ ui.badge('FAILED', 'error') }}
+          <dd style="font-size: var(--text-sm); color: var(--color-gray-600);">
+            Email delivery failed. Check the error message for details.
+          </dd>
+        </div>
+        <div style="display: flex; align-items: start; gap: var(--space-2);">
+          {{ ui.badge('QUEUED', 'warning') }}
+          <dd style="font-size: var(--text-sm); color: var(--color-gray-600);">
+            Email is waiting to be sent. This status should be temporary.
+          </dd>
+        </div>
+      </dl>
+    {% endcall %}
+  </div>
+</div>
 {% endblock %}

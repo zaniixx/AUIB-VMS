@@ -1,66 +1,167 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}User Management - Admin{% endblock %}
+
 {% block body %}
-<div class="bg-white p-6 rounded shadow max-w-4xl mx-auto">
-  <h2 class="text-2xl font-semibold mb-4">Users</h2>
-  <div class="mb-4">
-    Quick add:
-    <a class="ml-2 text-sm text-auib-accent" href="{{ url_for('admin.add_user') }}?role=student">Add Student</a>
-    <a class="ml-2 text-sm text-auib-accent" href="{{ url_for('admin.add_user') }}?role=club_leader">Add Club Leader</a>
-    <a class="ml-2 text-sm text-auib-accent" href="{{ url_for('admin.add_user') }}?role=officer">Add Officer</a>
-    <a class="ml-2 text-sm text-auib-accent" href="{{ url_for('admin.add_user') }}?role=admin">Add Admin</a>
+<div class="container" style="padding-top: var(--space-6); padding-bottom: var(--space-6);">
+  
+  <!-- Page Header -->
+  <div style="margin-bottom: var(--space-6);">
+    <h1 class="text-3xl" style="margin-bottom: var(--space-2);">User Management</h1>
+    <p class="text-muted">Manage all registered users, roles, and permissions.</p>
   </div>
-  <form method="get" class="mb-4 flex gap-2">
-    <input name="q" placeholder="search email..." value="{{ q or '' }}" class="border p-2" />
-    <button type="submit" class="px-3 py-1 border rounded">Search</button>
-  </form>
-  <table class="min-w-full bg-white">
-    <thead>
-      <tr>
-        <th class="px-4 py-2">Email</th>
-        <th class="px-4 py-2">Name</th>
-        <th class="px-4 py-2">Role</th>
-        <th class="px-4 py-2">Club</th>
-        <th class="px-4 py-2">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for u in users %}
-      <tr class="border-t">
-        <td class="px-4 py-2">{{ u.email }}</td>
-        <td class="px-4 py-2">{{ u.name or '-' }}</td>
-        <td class="px-4 py-2">{{ u.role }}</td>
-        <td class="px-4 py-2">{{ u.club_id or '-' }}</td>
-        <td class="px-4 py-2">
-          <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="text-sm text-auib-accent">Edit</a>
-          |
-          <span class="inline-block">
-            <form method="post" action="{{ url_for('admin.delete_user', user_id=u.id) }}" onsubmit="return confirm('Delete user {{ u.email }}?');"><button type="submit" class="text-sm text-red-600 ml-2">Delete</button></form>
-          </span>
-          |
-          {% if u.role != 'admin' %}
-            <span class="inline-block"><form method="post" action="{{ url_for('admin.promote_user', user_id=u.id) }}"><button type="submit" class="text-sm text-green-600 ml-2">Promote</button></form></span>
-          {% else %}
-            <span class="inline-block"><form method="post" action="{{ url_for('admin.demote_user', user_id=u.id) }}"><button type="submit" class="text-sm text-yellow-600 ml-2">Demote</button></form></span>
+
+  <!-- Search and Filter Section -->
+  <div class="card" style="margin-bottom: var(--space-6);">
+    <div class="card__body">
+      <form method="GET" action="{{ url_for('admin.users') }}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); align-items: end;">
+        
+        {{ ui.form_input(
+          label='Search by name or email',
+          name='search',
+          type='text',
+          placeholder='Enter name or email...',
+          value=request.args.get('search', '')
+        ) }}
+        
+        {{ ui.form_select(
+          label='Filter by role',
+          name='role',
+          options=[
+            ('', 'All Roles'),
+            ('student', 'Student'),
+            ('club_leader', 'Club Leader'),
+            ('officer', 'Officer'),
+            ('admin', 'Admin')
+          ],
+          selected=request.args.get('role', '')
+        ) }}
+        
+        <div style="display: flex; gap: var(--space-2);">
+          {{ ui.button('Filter', variant='primary', type='submit') }}
+          {% if request.args.get('search') or request.args.get('role') %}
+            <a href="{{ url_for('admin.users') }}" class="btn btn--secondary">Clear</a>
           {% endif %}
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="4" class="px-4 py-2">No users found.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% if total is defined %}
-    <div class="mt-4 flex items-center justify-between">
-      <div>Showing page {{ page }} — total {{ total }} users</div>
-      <div class="flex gap-2">
-        {% if page > 1 %}
-          <a href="{{ url_for_page(page-1) }}" class="px-3 py-1 border rounded">Prev</a>
-        {% endif %}
-        {% if (page * per_page) < total %}
-          <a href="{{ url_for_page(page+1) }}" class="px-3 py-1 border rounded">Next</a>
-        {% endif %}
-      </div>
+        </div>
+      </form>
     </div>
+  </div>
+
+  <!-- Users Table -->
+  {% if users %}
+    {% call ui.table_wrapper() %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Joined</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+            <tr>
+              <td>
+                <div class="font-medium">{{ u.name or 'Not set' }}</div>
+              </td>
+              <td>
+                <div class="text-sm">{{ u.email }}</div>
+              </td>
+              <td>
+                {{ ui.badge(u.role.replace('_', ' ').title(), variant={
+                  'admin': 'error',
+                  'officer': 'warning',
+                  'club_leader': 'info',
+                  'student': 'success'
+                }.get(u.role, 'default')) }}
+              </td>
+              <td>
+                <div class="text-sm text-muted">
+                  {% if u.created_at %}
+                    {{ u.created_at.strftime('%b %d, %Y') }}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </div>
+              </td>
+              <td>
+                {% if u.is_active %}
+                  {{ ui.status_badge('active') }}
+                {% else %}
+                  {{ ui.status_badge('inactive') }}
+                {% endif %}
+              </td>
+              <td>
+                <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                  <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="btn btn--small btn--primary">
+                    Edit
+                  </a>
+                  {% if u.role != 'admin' or (users | selectattr('role', 'equalto', 'admin') | list | length > 1) %}
+                    <button 
+                      type="button" 
+                      class="btn btn--small btn--danger"
+                      data-confirm="Are you sure you want to delete {{ u.name or u.email }}? This action cannot be undone."
+                      onclick="if(confirm(this.dataset.confirm)) { document.getElementById('delete-form-{{ u.id }}').submit(); }">
+                      Delete
+                    </button>
+                    <form id="delete-form-{{ u.id }}" action="{{ url_for('admin.delete_user', user_id=u.id) }}" method="POST" style="display: none;">
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
+
+    <!-- Pagination Info -->
+    {% if users|length > 0 %}
+      <div class="text-sm text-muted" style="margin-top: var(--space-4); text-align: center;">
+        Showing {{ users|length }} user(s)
+      </div>
+    {% endif %}
+
+  {% else %}
+    {{ ui.empty_state(
+      'No Users Found',
+      'There are no users matching your search criteria. Try adjusting your filters or search terms.'
+    ) }}
   {% endif %}
+
+  <!-- Quick Stats -->
+  <div style="margin-top: var(--space-8); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+    {% if all_users %}
+      <div class="card">
+        <div class="card__body" style="text-align: center;">
+          <div class="text-2xl font-semibold" style="color: var(--color-primary-600);">{{ all_users|length }}</div>
+          <div class="text-sm text-muted">Total Users</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card__body" style="text-align: center;">
+          <div class="text-2xl font-semibold" style="color: var(--color-success-600);">{{ all_users|selectattr('role', 'equalto', 'student')|list|length }}</div>
+          <div class="text-sm text-muted">Students</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card__body" style="text-align: center;">
+          <div class="text-2xl font-semibold" style="color: var(--color-info-600);">{{ all_users|selectattr('role', 'equalto', 'club_leader')|list|length }}</div>
+          <div class="text-sm text-muted">Club Leaders</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card__body" style="text-align: center;">
+          <div class="text-2xl font-semibold" style="color: var(--color-warning-600);">{{ all_users|selectattr('role', 'equalto', 'officer')|list|length }}</div>
+          <div class="text-sm text-muted">Officers</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
 </div>
 {% endblock %}

@@ -1,0 +1,62 @@
+@startuml VMS_UseCases
+
+title AUIB VMS - Use Case Diagram (System)
+
+actor Volunteer
+actor ClubLeader
+actor Officer
+actor Admin
+
+actor MailSystem as SMTP
+
+rectangle "VMS (system boundary)" {
+  usecase UC_CreateEvent as "Create Event\n(parse attendee list, validation)"
+  usecase UC_GenerateLinks as "Generate Per-Volunteer Links\n(JWT tokens, expiry, metadata)"
+  usecase UC_SendEmails as "Send Volunteer Emails\n(queued/async or fallback SMTP)"
+  usecase UC_SignIn as "Sign In via Token / Passwordless"
+  usecase UC_StopSign as "Stop Logging / Complete TimeLog"
+  usecase UC_ApproveTimelog as "Approve / Reject Timelogs (Officer)"
+  usecase UC_ManageUsers as "Manage Users (CRUD, roles, disable)"
+  usecase UC_Settings as "Manage System Settings (SMTP, token expiry)"
+  usecase UC_ViewEmailLogs as "View Email Logs (filters, retry)"
+  usecase UC_PasswordReset as "Password Reset (request & set new)"
+  usecase UC_Audit as "Record Setting & Admin Audits"
+}
+
+' Associations (primary actors & responsibilities)
+Volunteer --> UC_SignIn
+Volunteer --> UC_StopSign
+
+Officer --> UC_CreateEvent
+Officer --> UC_GenerateLinks
+Officer --> UC_ApproveTimelog
+Officer --> UC_ViewEmailLogs
+
+ClubLeader --> UC_ManageUsers
+
+Admin --> UC_ManageUsers
+Admin --> UC_Settings
+Admin --> UC_ViewEmailLogs
+Admin --> UC_Audit
+
+' Include / extend relations
+UC_CreateEvent .> UC_GenerateLinks : <<include>>
+UC_GenerateLinks .> UC_SendEmails : <<include>>
+UC_PasswordReset .> UC_SendEmails : <<include>>
+
+' System integration
+UC_SendEmails --> SMTP
+
+' Notes: maintenance and operational concerns
+note right of UC_SendEmails
+  - Prefer queued/asynchronous sending (Flask-Mailman / task queue)
+  - Fallback to direct SMTP when queue not configured
+  - EmailLog stores status, retries and errors for inspection
+end note
+
+note left of UC_Audit
+  - SettingAudit records who changed settings and when
+  - Consider separate ImpersonationAudit for admin "view as" events
+end note
+
+@enduml

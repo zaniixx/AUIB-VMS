@@ -1,43 +1,112 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Volunteer Home{% endblock %}
+
 {% block body %}
-<div class="container mx-auto p-6">
-  <h1 class="text-3xl font-semibold mb-4">Your Volunteer Home</h1>
+<div class="content-wrapper">
+  <div style="margin-bottom: var(--space-8);">
+    <h1 style="margin-bottom: var(--space-2);">Your Volunteer Home</h1>
+    <p style="color: var(--color-gray-600);">
+      Welcome back! Manage your event signups, track hours, and view your volunteer history.
+    </p>
+  </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div class="col-span-2">
-      <div class="bg-white rounded shadow p-4">
-        <h2 class="text-xl font-semibold">My Dashboard</h2>
-        <p class="text-sm text-gray-600 mt-1">Jump to your dashboard to manage signups and view history.</p>
-        <div class="mt-4">
-          <a href="{{ url_for('auth.volunteer_dashboard') }}" class="px-4 py-2 bg-auib-accent text-white rounded">Open Dashboard</a>
-        </div>
+  <!-- Role Switcher (only show for club leaders viewing as students) -->
+  {% if current_user.role in ('club_leader', 'clubleader') and effective_role == 'student' %}
+  <div style="margin-bottom: var(--space-6); padding: var(--space-4); background: var(--color-blue-50); border-radius: var(--radius); border: 1px solid var(--color-blue-200);">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3);">
+      <div>
+        <h3 style="font-size: var(--text-sm); font-weight: var(--font-semibold); margin: 0; color: var(--color-blue-700);">Club Leader Mode</h3>
+        <p style="font-size: var(--text-xs); color: var(--color-blue-600); margin: var(--space-1) 0 0 0;">
+          You're currently viewing as a volunteer. Switch back to manage your club.
+        </p>
       </div>
-
-      <div class="bg-white rounded shadow p-4 mt-4">
-        <h3 class="text-lg font-semibold">How it works</h3>
-        <ol class="list-decimal list-inside mt-2 text-sm text-gray-700">
-          <li>Officers create events and upload attendee lists.</li>
-          <li>You receive a token link by email and can sign in without a password.</li>
-          <li>Sign up for upcoming events and submit timelogs for attendance.</li>
-        </ol>
+      <div style="display: flex; gap: var(--space-2);">
+        <form method="post" action="{{ url_for('auth.switch_role', role='club_leader') }}" style="display: inline;">
+          <button type="submit" class="btn btn--primary btn--sm">
+            <i class="fas fa-building" style="width: 1rem; height: 1rem;"></i>
+            Club Dashboard
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('auth.reset_role') }}" style="display: inline;">
+          <button type="submit" class="btn btn--ghost btn--sm" title="Reset to default view">
+            <i class="fas fa-sync-alt" style="width: 1rem; height: 1rem;"></i>
+          </button>
+        </form>
       </div>
     </div>
+  </div>
+  {% endif %}
 
-    <div>
-      <div class="bg-white rounded shadow p-4">
-        <h3 class="text-lg font-semibold">Coming up</h3>
-        {% if next_event %}
-        <div class="mt-2">
-          <div class="font-semibold">{{ next_event.name }}</div>
-          <div class="text-sm text-gray-600">{{ next_event.display_date }} — {{ next_event.location }}</div>
-          <div class="mt-3">
-            <a href="{{ url_for('auth.volunteer_dashboard') }}" class="px-3 py-1 bg-auib-accent text-white rounded">View details</a>
-          </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-6);">
+    <!-- Main Dashboard Card -->
+    <div style="grid-column: span 2;">
+      {% call ui.card(title='My Dashboard', subtitle='Manage your volunteer activities and event signups') %}
+        <div style="margin-top: var(--space-4);">
+          <a href="{{ url_for('auth.volunteer_dashboard') }}" class="btn btn--primary btn--lg">
+            <i class="fas fa-file-alt" style="width: 1.25rem; height: 1.25rem;"></i>
+            Open Dashboard
+          </a>
         </div>
+      {% endcall %}
+
+      <div style="margin-top: var(--space-6);"></div>
+
+      <!-- How It Works -->
+      {% call ui.card(title='How It Works', compact=true) %}
+        <ol style="list-style: decimal; padding-left: var(--space-5); color: var(--color-gray-700);">
+          <li style="margin-bottom: var(--space-2);">
+            <strong>Browse Events:</strong> Officers create events and you can sign up for ones that interest you.
+          </li>
+          <li style="margin-bottom: var(--space-2);">
+            <strong>Track Hours:</strong> Receive token links by email to log your volunteer hours during events.
+          </li>
+          <li style="margin-bottom: var(--space-2);">
+            <strong>Earn Recognition:</strong> Your hours are tracked and you can generate certificates for completed service.
+          </li>
+        </ol>
+      {% endcall %}
+    </div>
+
+    <!-- Next Event Sidebar -->
+    <div>
+      {% call ui.card(title='Coming Up', compact=true) %}
+        {% if next_event %}
+          <div style="margin-top: var(--space-4);">
+            <div style="font-weight: var(--font-semibold); margin-bottom: var(--space-2);">
+              {{ next_event.name }}
+            </div>
+            <div style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-1);">
+              <i class="fas fa-calendar-alt" style="width: 1rem; height: 1rem; display: inline-block; vertical-align: text-bottom;"></i>
+              {{ next_event.display_date }}
+            </div>
+            <div style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-4);">
+              <i class="fas fa-map-marker-alt" style="width: 1rem; height: 1rem; display: inline-block; vertical-align: text-bottom;"></i>
+              {{ next_event.location }}
+            </div>
+            <a href="{{ url_for('auth.volunteer_dashboard') }}" class="btn btn--primary btn--sm" style="width: 100%;">
+              View Details
+            </a>
+          </div>
         {% else %}
-        <p class="text-sm text-gray-600 mt-2">No upcoming events. Check back later or contact an officer to learn more.</p>
+          {{ ui.empty_state(
+            'No Upcoming Events',
+            'Check back later or contact an officer to learn about new volunteer opportunities.'
+          ) }}
         {% endif %}
-      </div>
+      {% endcall %}
+
+      <div style="margin-top: var(--space-6);"></div>
+
+      <!-- Quick Stats (placeholder for future) -->
+      {% call ui.card(title='Quick Stats', compact=true) %}
+        <div style="text-align: center; padding: var(--space-4) 0;">
+          <p style="font-size: var(--text-sm); color: var(--color-gray-600);">
+            Visit your dashboard to see your volunteer statistics and history.
+          </p>
+        </div>
+      {% endcall %}
     </div>
   </div>
 </div>

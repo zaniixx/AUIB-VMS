@@ -1,24 +1,65 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Register{% endblock %}
+
 {% block body %}
-<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow">
-  <h2 class="text-2xl font-semibold mb-4">Volunteer Registration</h2>
-  <form method="post" action="{{ url_for('auth.register') }}" class="space-y-4">
-    <div>
-      <label for="name" class="block text-sm font-medium text-gray-700">Full name</label>
-      <input id="name" name="name" type="text" class="mt-1 block w-full border rounded px-3 py-2" />
+<div class="narrow-wrapper">
+  {% call ui.card(title='Create Your Volunteer Account', subtitle='Join AUIB VMS and start tracking your volunteer hours.') %}
+    <form method="POST" action="{{ url_for('auth.register') }}" data-validate>
+      {{ ui.form_input(
+        name='name',
+        label='Full Name',
+        type='text',
+        required=true,
+        placeholder='John Doe',
+        autocomplete='name',
+        help_text='Enter your full name as it should appear on certificates'
+      ) }}
+
+      {{ ui.form_input(
+        name='email',
+        label='Email Address',
+        type='email',
+        required=true,
+        placeholder='your.email@auib.edu',
+        autocomplete='email',
+        help_text='Use your AUIB email address'
+      ) }}
+
+      {{ ui.form_input(
+        name='password',
+        label='Password',
+        type='password',
+        required=true,
+        placeholder='Enter a secure password',
+        autocomplete='new-password',
+        help_text='Minimum 8 characters recommended'
+      ) }}
+
+      <div class="form-group">
+        <button type="submit" class="btn btn--primary btn--full">
+          Create Account
+        </button>
+      </div>
+    </form>
+
+    <hr style="margin: var(--space-6) 0; border: none; border-top: 1px solid var(--color-gray-200);">
+
+    <div class="text-center">
+      <p style="margin-bottom: var(--space-3); color: var(--color-gray-600); font-size: var(--text-sm);">
+        Already have an account?
+      </p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn--outline btn--full">
+        Sign In
+      </a>
     </div>
-    <div>
-      <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-      <input id="email" name="email" type="email" required class="mt-1 block w-full border rounded px-3 py-2" />
-    </div>
-    <div>
-      <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-      <input id="password" name="password" type="password" required class="mt-1 block w-full border rounded px-3 py-2" />
-    </div>
-    <div>
-      <button type="submit" class="w-full bg-auib-accent text-white px-4 py-2 rounded">Register</button>
-    </div>
-  </form>
-  <div class="mt-4 text-sm text-gray-600">Already have an account? <a href="{{ url_for('auth.login') }}" class="text-auib-accent">Sign in</a></div>
+  {% endcall %}
+
+  {{ ui.alert(
+    'After registration, you can start signing up for volunteer events and tracking your service hours.',
+    type='info',
+    title='Welcome to AUIB VMS'
+  ) }}
 </div>
 {% endblock %}

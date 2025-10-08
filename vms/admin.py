@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
 from flask_login import login_required, current_user
 from .db import get_db
 from . import models
@@ -17,6 +17,32 @@ def admin_required():
 def admin_only():
     """Return True if current_user is an admin (strict)."""
     return current_user and getattr(current_user, 'role', None) == 'admin'
+
+
+@bp.route('/view-as', methods=('POST',))
+@login_required
+def view_as():
+    # only allow admins to set a temporary preview role
+    if not admin_only():
+        return render_template('403.html'), 403
+    role = (request.form.get('role') or '').strip()
+    allowed = {'student', 'officer', 'club_leader', 'admin'}
+    if role not in allowed:
+        flash('Invalid role selected.', 'danger')
+        return redirect(request.referrer or url_for('admin.index'))
+    session['view_as_role'] = role
+    flash(f'Now previewing as: {role}', 'success')
+    return redirect(request.referrer or url_for('admin.index'))
+
+
+@bp.route('/view-as/stop', methods=('POST',))
+@login_required
+def stop_view_as():
+    if not admin_only():
+        return render_template('403.html'), 403
+    session.pop('view_as_role', None)
+    flash('Stopped previewing as another role.', 'info')
+    return redirect(request.referrer or url_for('admin.index'))
 
 
 @bp.route('/')
@@ -41,7 +67,7 @@ def settings():
         if not admin_only():
             return render_template('403.html'), 403
         # save settings to DB
-        keys = ['SMTP_HOST','SMTP_PORT','SMTP_USER','SMTP_PASS','SMTP_USE_TLS','SMTP_USE_SSL','MAIL_DEFAULT_SENDER']
+        keys = ['SMTP_HOST','SMTP_PORT','SMTP_USER','SMTP_PASS','SMTP_USE_TLS','SMTP_USE_SSL','SMTP_SKIP_AUTH','MAIL_DEFAULT_SENDER']
         for k in keys:
             v = request.form.get(k.lower())
             models.set_setting(k, v)
@@ -49,7 +75,7 @@ def settings():
         return redirect(url_for('admin.settings'))
     # read current settings
     cfg = {}
-    for k in ['SMTP_HOST','SMTP_PORT','SMTP_USER','SMTP_PASS','SMTP_USE_TLS','SMTP_USE_SSL','MAIL_DEFAULT_SENDER']:
+    for k in ['SMTP_HOST','SMTP_PORT','SMTP_USER','SMTP_PASS','SMTP_USE_TLS','SMTP_USE_SSL','SMTP_SKIP_AUTH','MAIL_DEFAULT_SENDER']:
         cfg[k] = models.get_setting(k) or ''
     return render_template('admin/settings.html', cfg=cfg)
 

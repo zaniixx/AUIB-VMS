@@ -1,35 +1,539 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Reports Dashboard{% endblock %}
+
 {% block body %}
-<div class="bg-white p-6 rounded-lg shadow max-w-3xl mx-auto">
-  <h2 class="text-2xl font-semibold mb-4">Generate Reports</h2>
-  <form method="get" action="{{ url_for('officer.reports') }}" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <label class="block text-sm font-medium text-gray-700">Start Date</label>
-      <input name="start_date" placeholder="YYYY-MM-DD" class="mt-1 block w-full border rounded px-3 py-2" value="{{ request.args.get('start_date','') }}" />
+<div class="container" style="padding-top: var(--space-6); padding-bottom: var(--space-6);">
+  
+  <!-- Page Header -->
+  <div style="margin-bottom: var(--space-6);">
+    <h1 class="text-3xl" style="margin-bottom: var(--space-2);">Reports Dashboard</h1>
+    <p class="text-muted">
+      {% if current_user.role == 'officer' %}
+        Generate comprehensive volunteer reports across all clubs and events.
+      {% else %}
+        View reports for your club and associated events.
+      {% endif %}
+    </p>
+  </div>
+
+  <!-- Quick Stats (if available) -->
+  {% if stats %}
+  <div style="margin-bottom: var(--space-6); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+    
+    <div class="card">
+      <div class="card__body" style="text-align: center;">
+        <div class="text-2xl font-semibold" style="color: var(--color-primary-600); margin-bottom: var(--space-2);">{{ stats.total_hours|round(1) }}</div>
+        <div class="text-sm text-muted">Total Hours Logged</div>
+      </div>
     </div>
-    <div>
-      <label class="block text-sm font-medium text-gray-700">End Date</label>
-      <input name="end_date" placeholder="YYYY-MM-DD" class="mt-1 block w-full border rounded px-3 py-2" value="{{ request.args.get('end_date','') }}" />
+
+    <div class="card">
+      <div class="card__body" style="text-align: center;">
+        <div class="text-2xl font-semibold" style="color: var(--color-success-600); margin-bottom: var(--space-2);">{{ stats.total_volunteers }}</div>
+        <div class="text-sm text-muted">Active Volunteers</div>
+      </div>
     </div>
-    <div>
-      <label class="block text-sm font-medium text-gray-700">Student Email</label>
-      <input name="student_email" placeholder="student@auib.edu" class="mt-1 block w-full border rounded px-3 py-2" value="{{ request.args.get('student_email','') }}" />
+
+    <div class="card">
+      <div class="card__body" style="text-align: center;">
+        <div class="text-2xl font-semibold" style="color: var(--color-info-600); margin-bottom: var(--space-2);">{{ stats.total_events }}</div>
+        <div class="text-sm text-muted">Events with Hours</div>
+      </div>
     </div>
-    <div>
-      <label class="block text-sm font-medium text-gray-700">Club ID</label>
-      <input name="club_id" placeholder="club_..." class="mt-1 block w-full border rounded px-3 py-2" value="{{ request.args.get('club_id','') }}" />
+
+    {% if current_user.role == 'officer' %}
+    <div class="card">
+      <div class="card__body" style="text-align: center;">
+        <div class="text-2xl font-semibold" style="color: var(--color-warning-600); margin-bottom: var(--space-2);">{{ stats.total_clubs }}</div>
+        <div class="text-sm text-muted">Active Clubs</div>
+      </div>
     </div>
-    <div class="md:col-span-2">
-      <label class="block text-sm font-medium text-gray-700">Report Type</label>
-  <select name="type" title="Report type" class="mt-1 block w-full border rounded px-3 py-2">
-        <option value="general" {% if request.args.get('type')=='general' %}selected{% endif %}>General Hours Report</option>
-        <option value="person_summary" {% if request.args.get('type')=='person_summary' %}selected{% endif %}>Person Summary (single row)</option>
-        <option value="person_detailed" {% if request.args.get('type')=='person_detailed' %}selected{% endif %}>Person Detailed</option>
-      </select>
+    {% endif %}
+
+  </div>
+  {% endif %}
+
+  <!-- Report Type Selection -->
+  <div class="card" style="margin-bottom: var(--space-6);">
+    <div class="card__header">
+      <h2 class="text-xl font-semibold">Choose Report Type</h2>
+      <p class="text-sm text-muted">Select the type of report you want to generate</p>
     </div>
-    <div class="md:col-span-2">
-      <button type="submit" class="bg-auib-accent text-white px-4 py-2 rounded">Download CSV</button>
+    <div class="card__body">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-4);">
+        
+        <!-- Overall Report (Officers Only) -->
+        {% if current_user.role == 'officer' %}
+        <div class="card card--interactive report-type-card" data-report-type="overall" onclick="selectReportType('overall')">
+          <div class="card__body" style="text-align: center;">
+            <div class="text-4xl" style="margin-bottom: var(--space-2);">📊</div>
+            <h3 class="text-lg font-medium" style="margin-bottom: var(--space-1);">Overall Report</h3>
+            <p class="text-sm text-muted">Complete system-wide volunteer activity report</p>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Club Specific Report -->
+        <div class="card card--interactive report-type-card" data-report-type="club" onclick="selectReportType('club')">
+          <div class="card__body" style="text-align: center;">
+            <div class="text-4xl" style="margin-bottom: var(--space-2);">🏛️</div>
+            <h3 class="text-lg font-medium" style="margin-bottom: var(--space-1);">
+              {% if current_user.role == 'officer' %}Club Specific{% else %}My Club{% endif %}
+            </h3>
+            <p class="text-sm text-muted">
+              {% if current_user.role == 'officer' %}Reports for a specific club{% else %}Reports for {{ current_user.club_id or 'your club' }}{% endif %}
+            </p>
+          </div>
+        </div>
+
+        <!-- Event Specific Report -->
+        <div class="card card--interactive report-type-card" data-report-type="event" onclick="selectReportType('event')">
+          <div class="card__body" style="text-align: center;">
+            <div class="text-4xl" style="margin-bottom: var(--space-2);">📅</div>
+            <h3 class="text-lg font-medium" style="margin-bottom: var(--space-1);">Event Specific</h3>
+            <p class="text-sm text-muted">
+              {% if current_user.role == 'officer' %}Reports for a specific event{% else %}Reports for your club's events{% endif %}
+            </p>
+          </div>
+        </div>
+
+        <!-- Student Specific Report (Officers Only) -->
+        {% if current_user.role == 'officer' %}
+        <div class="card card--interactive report-type-card" data-report-type="student" onclick="selectReportType('student')">
+          <div class="card__body" style="text-align: center;">
+            <div class="text-4xl" style="margin-bottom: var(--space-2);">👤</div>
+            <h3 class="text-lg font-medium" style="margin-bottom: var(--space-1);">Student Specific</h3>
+            <p class="text-sm text-muted">Reports for an individual volunteer</p>
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
     </div>
-  </form>
+  </div>
+
+  <!-- Report Configuration Form (Hidden initially) -->
+  <div id="report-config" class="card" style="display: none; margin-bottom: var(--space-6);">
+    <div class="card__header">
+      <h2 class="text-xl font-semibold" id="config-title">Configure Report</h2>
+      <p class="text-sm text-muted" id="config-subtitle">Set filters and options for your report</p>
+    </div>
+    <div class="card__body">
+      <form id="report-form" method="post" action="{{ url_for('officer.reports') }}" data-validate>
+        
+        <!-- Hidden field for report type -->
+        <input type="hidden" name="report_type" id="report-type-input" value="">
+        
+        <!-- Date Range Filters -->
+        <div style="margin-bottom: var(--space-6);">
+          <h3 class="text-lg font-medium" style="margin-bottom: var(--space-4);">Date Range</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+            {{ ui.form_input(
+              name='start_date',
+              label='Start Date',
+              type='date',
+              placeholder='YYYY-MM-DD',
+              help_text='Filter by start date (optional)'
+            ) }}
+
+            {{ ui.form_input(
+              name='end_date',
+              label='End Date',
+              type='date',
+              placeholder='YYYY-MM-DD',
+              help_text='Filter by end date (optional)'
+            ) }}
+          </div>
+        </div>
+
+        <!-- Specific Filters (shown based on report type) -->
+        <div id="specific-filters" style="margin-bottom: var(--space-6);">
+          <!-- Club Filter -->
+          <div id="club-filter" style="display: none;">
+            <h3 class="text-lg font-medium" style="margin-bottom: var(--space-4);">Club Selection</h3>
+            {{ ui.form_select(
+              name='club_id',
+              label='Select Club',
+              options=club_options,
+              help_text='Choose the club to report on'
+            ) }}
+          </div>
+
+          <!-- Event Filter -->
+          <div id="event-filter" style="display: none;">
+            <h3 class="text-lg font-medium" style="margin-bottom: var(--space-4);">Event Selection</h3>
+            {{ ui.form_select(
+              name='event_id',
+              label='Select Event',
+              options=event_options,
+              help_text='Choose the event to report on'
+            ) }}
+          </div>
+
+          <!-- Student Filter -->
+          <div id="student-filter" style="display: none;">
+            <h3 class="text-lg font-medium" style="margin-bottom: var(--space-4);">Student Selection</h3>
+            {{ ui.form_input(
+              name='student_email',
+              label='Student Email',
+              type='email',
+              placeholder='student@auib.edu',
+              help_text='Enter the student email to report on'
+            ) }}
+          </div>
+        </div>
+
+        <!-- Report Format -->
+        <div style="margin-bottom: var(--space-6);">
+          <h3 class="text-lg font-medium" style="margin-bottom: var(--space-4);">Report Format</h3>
+          {{ ui.form_select(
+            name='type',
+            label='Report Type',
+            options=[
+              ('general', 'General Hours Report - All approved timelogs'),
+              ('person_summary', 'Person Summary - Total hours per volunteer'),
+              ('person_detailed', 'Person Detailed - Hours per event per volunteer')
+            ],
+            selected='general',
+            help_text='Choose the format for your report'
+          ) }}
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: var(--space-3);">
+          <button type="submit" class="btn btn--primary btn--lg" id="generate-btn">
+            <svg style="width: 1.25rem; height: 1.25rem; margin-right: var(--space-2);" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Generate Report
+          </button>
+          <button type="button" class="btn btn--secondary" onclick="cancelReport()">
+            Cancel
+          </button>
+        </div>
+        
+      </form>
+    </div>
+  </div>
+
+  <!-- Report Results (Hidden initially) -->
+  <div id="report-results" class="card" style="display: none; margin-bottom: var(--space-6);">
+    <div class="card__header">
+      <h2 class="text-xl font-semibold" id="results-title">Report Results</h2>
+      <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4);">
+        <button type="button" class="btn btn--primary" onclick="exportReport('csv')">
+          <svg style="width: 1rem; height: 1rem; margin-right: var(--space-2);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export CSV
+        </button>
+        <button type="button" class="btn btn--success" onclick="exportReport('xlsx')">
+          <svg style="width: 1rem; height: 1rem; margin-right: var(--space-2);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export XLSX
+        </button>
+      </div>
+    </div>
+    <div class="card__body">
+      <!-- Chart Container -->
+      <div id="chart-container" style="margin-bottom: var(--space-6);">
+        <canvas id="report-chart" width="400" height="200"></canvas>
+      </div>
+      
+      <!-- Data Table -->
+      <div id="table-container">
+        <h3 class="text-lg font-medium" style="margin-bottom: var(--space-4);">Data Table</h3>
+        <div class="table-wrapper">
+          <table class="table" id="report-table">
+            <thead>
+              <tr id="table-header"></tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Type Descriptions -->
+  <div id="report-descriptions" class="card">
+    <div class="card__header">
+      <h2 class="text-xl font-semibold">Report Types Explained</h2>
+    </div>
+    <div class="card__body">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-6);">
+        
+        <div>
+          <h3 class="text-lg font-medium" style="margin-bottom: var(--space-2); color: var(--color-primary-600);">General Hours Report</h3>
+          <p class="text-sm text-muted">
+            Lists all approved volunteer hours with event details, dates, and calculated hours. One row per timelog entry.
+            Perfect for detailed activity tracking and verification.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-medium" style="margin-bottom: var(--space-2); color: var(--color-success-600);">Person Summary</h3>
+          <p class="text-sm text-muted">
+            Aggregates total hours per volunteer. Shows one row per person with their name, email, and total hours.
+            Ideal for quick overview of volunteer contributions.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-medium" style="margin-bottom: var(--space-2); color: var(--color-info-600);">Person Detailed</h3>
+          <p class="text-sm text-muted">
+            Shows individual event participation for each volunteer. Includes event names, dates, and hours per event.
+            Best for understanding volunteer engagement patterns.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<script>
+let selectedReportType = null;
+let currentReportData = null;
+
+function selectReportType(type) {
+  selectedReportType = type;
+  
+  // Update UI
+  document.querySelectorAll('.report-type-card').forEach(card => {
+    card.classList.remove('selected');
+  });
+  document.querySelector(`[data-report-type="${type}"]`).classList.add('selected');
+  
+  // Show configuration form
+  document.getElementById('report-config').style.display = 'block';
+  document.getElementById('report-type-input').value = type;
+  
+  // Update form title
+  const titles = {
+    'overall': 'Overall System Report',
+    'club': '{{ "Club Specific Report" if current_user.role == "officer" else "My Club Report" }}',
+    'event': 'Event Specific Report',
+    'student': 'Student Specific Report'
+  };
+  document.getElementById('config-title').textContent = titles[type];
+  
+  // Hide all specific filters
+  document.getElementById('club-filter').style.display = 'none';
+  document.getElementById('event-filter').style.display = 'none';
+  document.getElementById('student-filter').style.display = 'none';
+  
+  // Show relevant filters
+  if (type === 'club') {
+    document.getElementById('club-filter').style.display = 'block';
+  } else if (type === 'event') {
+    document.getElementById('event-filter').style.display = 'block';
+  } else if (type === 'student') {
+    document.getElementById('student-filter').style.display = 'block';
+  }
+  
+  // Scroll to form
+  document.getElementById('report-config').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelReport() {
+  selectedReportType = null;
+  currentReportData = null;
+  document.querySelectorAll('.report-type-card').forEach(card => {
+    card.classList.remove('selected');
+  });
+  document.getElementById('report-config').style.display = 'none';
+  document.getElementById('report-results').style.display = 'none';
+}
+
+// Handle form submission
+document.getElementById('report-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  const generateBtn = document.getElementById('generate-btn');
+  const originalText = generateBtn.innerHTML;
+  
+  // Show loading state
+  generateBtn.innerHTML = '<div class="spinner" style="width: 1.25rem; height: 1.25rem; margin-right: var(--space-2);"></div> Generating...';
+  generateBtn.disabled = true;
+  
+  fetch('{{ url_for("officer.reports") }}', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+    
+    currentReportData = data;
+    displayReportResults(data);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('An error occurred while generating the report.');
+  })
+  .finally(() => {
+    generateBtn.innerHTML = originalText;
+    generateBtn.disabled = false;
+  });
+});
+
+function displayReportResults(data) {
+  const resultsDiv = document.getElementById('report-results');
+  const resultsTitle = document.getElementById('results-title');
+  
+  resultsTitle.textContent = `Report Results - ${data.report_type.charAt(0).toUpperCase() + data.report_type.slice(1)} (${data.rtype})`;
+  
+  // Display chart
+  displayChart(data.chart_data);
+  
+  // Display table
+  displayTable(data.data);
+  
+  // Show results
+  resultsDiv.style.display = 'block';
+  resultsDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+function displayChart(chartData) {
+  const ctx = document.getElementById('report-chart').getContext('2d');
+  
+  // Destroy existing chart if any
+  if (window.currentChart) {
+    window.currentChart.destroy();
+  }
+  
+  if (!chartData || !chartData.labels || !chartData.datasets) {
+    document.getElementById('chart-container').style.display = 'none';
+    return;
+  }
+  
+  document.getElementById('chart-container').style.display = 'block';
+  
+  window.currentChart = new Chart(ctx, {
+    type: chartData.type,
+    data: chartData,
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Volunteer Hours Visualization'
+        }
+      }
+    }
+  });
+}
+
+function displayTable(data) {
+  const headerRow = document.getElementById('table-header');
+  const body = document.getElementById('table-body');
+  
+  // Clear existing content
+  headerRow.innerHTML = '';
+  body.innerHTML = '';
+  
+  if (!data || data.length === 0) {
+    body.innerHTML = '<tr><td colspan="100%">No data available</td></tr>';
+    return;
+  }
+  
+  // Create headers
+  const headers = Object.keys(data[0]);
+  headers.forEach(header => {
+    const th = document.createElement('th');
+    th.textContent = header.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    headerRow.appendChild(th);
+  });
+  
+  // Create rows
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    headers.forEach(header => {
+      const td = document.createElement('td');
+      let value = row[header];
+      if (typeof value === 'number' && header.includes('hour')) {
+        value = parseFloat(value).toFixed(2);
+      }
+      td.textContent = value || '';
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+}
+
+function exportReport(format) {
+  if (!currentReportData) {
+    alert('No report data available. Please generate a report first.');
+    return;
+  }
+  
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = `{{ url_for("officer.reports") }}/export/${format}`;
+  
+  // Copy form data
+  const originalForm = document.getElementById('report-form');
+  const formData = new FormData(originalForm);
+  for (let [key, value] of formData.entries()) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
+  }
+  
+  document.body.appendChild(form);
+  form.submit();
+  document.body.removeChild(form);
+}
+
+// Add selected class styling
+const style = document.createElement('style');
+style.textContent = `
+  .report-type-card.selected {
+    border-color: var(--color-primary-600);
+    background-color: var(--color-primary-50);
+  }
+  .report-type-card:hover {
+    border-color: var(--color-primary-400);
+    cursor: pointer;
+  }
+  .spinner {
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid var(--color-primary-600);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+document.head.appendChild(style);
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+.report-type-card {
+  transition: all 0.2s ease;
+  border: 2px solid var(--color-gray-200);
+}
+.report-type-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+</style>
 {% endblock %}

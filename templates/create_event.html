@@ -1,55 +1,450 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Create Event{% endblock %}
+
 {% block body %}
-<div class="bg-white p-6 rounded-lg shadow max-w-3xl mx-auto">
-  <h2 class="text-2xl font-semibold mb-4">Create Event</h2>
-  <form method="post" enctype="multipart/form-data" action="{{ url_for('officer.create_event') }}" class="space-y-4">
-    <div>
-      <label class="block text-sm font-medium text-gray-700" for="name">Event Name</label>
-      <input id="name" name="name" required placeholder="Community Cleanup" title="Event name" value="{{ name or '' }}" class="mt-1 block w-full border rounded px-3 py-2" />
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Start (date & time)</label>
-        <input id="start" name="start" type="datetime-local" required value="{{ start or '' }}" class="mt-1 block w-full border rounded px-3 py-2" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700">End (date & time)</label>
-        <input id="end" name="end" type="datetime-local" value="{{ end or '' }}" class="mt-1 block w-full border rounded px-3 py-2" />
-      </div>
-      <div>
-  <label class="block text-sm font-medium text-gray-700" for="location">Location</label>
-  <input id="location" name="location" placeholder="Main Quad" title="Location" value="{{ location or '' }}" class="mt-1 block w-full border rounded px-3 py-2" />
-      </div>
-    </div>
-    <div>
-  <label class="block text-sm font-medium text-gray-700" for="description">Description</label>
-  <textarea id="description" name="description" placeholder="Short description of the event" title="Description" class="mt-1 block w-full border rounded px-3 py-2">{{ description or '' }}</textarea>
-    </div>
-    <div>
-  <label class="block text-sm font-medium text-gray-700">Volunteer File (CSV or Excel)</label>
-      <div class="text-sm text-gray-500">File must contain an <code>Email</code> or <code>email</code> column. Upload example CSV for testing.</div>
-  <input type="file" id="file" name="file" title="Volunteer CSV or Excel file" accept=".csv,.xlsx,.xls" class="mt-2" />
-    </div>
-    <div>
-      <button type="submit" class="bg-auib-accent text-white px-4 py-2 rounded">Create</button>
-    </div>
-  </form>
+<div class="narrow-wrapper">
+  {% call ui.card(title='Create Volunteer Event', subtitle='Set up a new event and invite volunteers') %}
+    <form method="post" enctype="multipart/form-data" action="{{ url_for('officer.create_event') }}" data-validate>
+      
+      {{ ui.form_input(
+        name='name',
+        label='Event Name',
+        type='text',
+        required=true,
+        placeholder='Community Cleanup',
+        value=name or '',
+        help_text='A clear, descriptive name for the volunteer event'
+      ) }}
 
-  {% if links_info %}
-    <div class="mt-6">
-      <h3 class="font-semibold">Generated Links</h3>
-      <p class="text-sm text-gray-500 mb-2">If email sending failed, copy these lines into your email client for each volunteer:</p>
-      <textarea readonly title="Generated links with names" aria-label="Generated links with names" class="w-full h-56 border rounded p-3 bg-gray-50">{% for it in links_info %}{{ it.name }} &lt;{{ it.email }}&gt;: {{ it.link }}
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+        {{ ui.form_input(
+          name='start',
+          label='Start Date & Time',
+          type='datetime-local',
+          required=true,
+          value=start or '',
+          help_text='When the event begins'
+        ) }}
 
+        {{ ui.form_input(
+          name='end',
+          label='End Date & Time',
+          type='datetime-local',
+          required=false,
+          value=end or '',
+          help_text='When the event ends (optional)'
+        ) }}
+      </div>
+
+      {{ ui.form_input(
+        name='location',
+        label='Location',
+        type='text',
+        placeholder='Main Quad',
+        value=location or '',
+        help_text='Where volunteers should meet'
+      ) }}
+
+      {{ ui.form_textarea(
+        name='description',
+        label='Description',
+        placeholder='Brief description of the event and what volunteers will be doing',
+        value=description or '',
+        help_text='Provide details about the event activities',
+        rows=4
+      ) }}
+
+      {{ ui.form_input(
+        name='volunteer_limit',
+        label='Volunteer Limit (Optional)',
+        type='number',
+        min='1',
+        placeholder='50',
+        value=volunteer_limit or '',
+        help_text='Maximum number of volunteers allowed for this event. Leave empty for unlimited.'
+      ) }}
+
+      <!-- Event Category -->
+      <div class="form-group">
+        <label for="category" class="form-label">Event Category</label>
+        <select id="category" name="category" class="form-select">
+          <option value="">Select a category (optional)</option>
+          <option value="community" {% if category == 'community' %}selected{% endif %}>Community Service</option>
+          <option value="environmental" {% if category == 'environmental' %}selected{% endif %}>Environmental</option>
+          <option value="educational" {% if category == 'educational' %}selected{% endif %}>Educational</option>
+          <option value="healthcare" {% if category == 'healthcare' %}selected{% endif %}>Healthcare</option>
+          <option value="emergency" {% if category == 'emergency' %}selected{% endif %}>Emergency Response</option>
+          <option value="fundraising" {% if category == 'fundraising' %}selected{% endif %}>Fundraising</option>
+          <option value="other" {% if category == 'other' %}selected{% endif %}>Other</option>
+        </select>
+        <span class="form-help">Categorize your event to help volunteers find relevant opportunities</span>
+      </div>
+
+      <!-- Contact Information -->
+      {{ ui.form_input(
+        name='contact_name',
+        label='Event Coordinator',
+        type='text',
+        placeholder='John Smith',
+        value=contact_name or '',
+        help_text='Name of the person volunteers should contact for questions'
+      ) }}
+
+      {{ ui.form_input(
+        name='contact_email',
+        label='Coordinator Email',
+        type='email',
+        placeholder='john.smith@auib.edu',
+        value=contact_email or '',
+        help_text='Email address for event-related questions'
+      ) }}
+
+      <!-- Advanced Options Toggle -->
+      <div class="form-group">
+        <button type="button" class="btn btn--outline btn--sm" onclick="toggleAdvancedOptions()" id="advanced-toggle">
+          <svg style="width: 1rem; height: 1rem; margin-right: var(--space-2);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+          </svg>
+          Show Advanced Options
+        </button>
+      </div>
+
+      <!-- Advanced Options Section -->
+      <div id="advanced-options" style="display: none; border: 1px solid var(--color-gray-200); border-radius: var(--border-radius); padding: var(--space-4); margin-top: var(--space-4); background: var(--color-gray-50);">
+        <h4 style="font-size: var(--text-base); font-weight: var(--font-semibold); margin-bottom: var(--space-4); color: var(--color-gray-800);">
+          Advanced Options
+        </h4>
+
+        <!-- Skills Required -->
+        {{ ui.form_textarea(
+          name='required_skills',
+          label='Required Skills (Optional)',
+          placeholder='List any specific skills or experience needed for this event',
+          value=required_skills or '',
+          help_text='Examples: First aid certification, heavy lifting, public speaking',
+          rows=2
+        ) }}
+
+        <!-- Equipment Needed -->
+        {{ ui.form_textarea(
+          name='equipment_needed',
+          label='Equipment Needed (Optional)',
+          placeholder='List any equipment or supplies volunteers should bring',
+          value=equipment_needed or '',
+          help_text='Examples: Gloves, water bottles, comfortable shoes, sunscreen',
+          rows=2
+        ) }}
+
+        <!-- Age Restrictions -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+          {{ ui.form_input(
+            name='min_age',
+            label='Minimum Age (Optional)',
+            type='number',
+            min='13',
+            max='100',
+            placeholder='16',
+            value=min_age or '',
+            help_text='Minimum age requirement'
+          ) }}
+
+          {{ ui.form_input(
+            name='max_age',
+            label='Maximum Age (Optional)',
+            type='number',
+            min='13',
+            max='100',
+            placeholder='99',
+            value=max_age or '',
+            help_text='Maximum age limit'
+          ) }}
+        </div>
+
+        <!-- Event Priority -->
+        <div class="form-group">
+          <label class="form-label">Event Priority</label>
+          <div style="display: flex; gap: var(--space-4); margin-top: var(--space-2);">
+            <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
+              <input type="radio" name="priority" value="low" {% if not priority or priority == 'low' %}checked{% endif %}>
+              <span>Low</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
+              <input type="radio" name="priority" value="normal" {% if priority == 'normal' %}checked{% endif %}>
+              <span>Normal</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
+              <input type="radio" name="priority" value="high" {% if priority == 'high' %}checked{% endif %}>
+              <span>High</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
+              <input type="radio" name="priority" value="urgent" {% if priority == 'urgent' %}checked{% endif %}>
+              <span>Urgent</span>
+            </label>
+          </div>
+          <span class="form-help">Higher priority events may be highlighted to volunteers</span>
+        </div>
+
+        <!-- Volunteer Entry Method Toggle -->
+        <div class="form-group">
+          <label class="form-label">How would you like to add volunteers?</label>
+          <div style="display: flex; gap: var(--space-4); margin-top: var(--space-2);">
+            <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
+              <input type="radio" name="entry_method" value="file" checked onchange="toggleEntryMethod()">
+              <span>Upload File</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
+              <input type="radio" name="entry_method" value="manual" onchange="toggleEntryMethod()">
+              <span>Manual Entry</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- File Upload Section -->
+        <div id="file-upload-section" class="form-group">
+          <label for="file" class="form-label">Volunteer File (CSV or Excel)</label>
+          <input type="file" 
+                 id="file" 
+                 name="file" 
+                 accept=".csv,.xlsx,.xls"
+                 class="form-input">
+          <span class="form-help">
+            Upload a CSV or Excel file with an <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">Email</code> or <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">email</code> column. Optionally include a <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">Name</code> or <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">name</code> column. Volunteers will receive invitation links via email.
+          </span>
+        </div>
+
+        <!-- Manual Entry Section -->
+        <div id="manual-entry-section" class="form-group" style="display: none;">
+          <label class="form-label">Volunteer List</label>
+          <div id="volunteers-container">
+            <div class="volunteer-entry" style="display: flex; gap: var(--space-3); align-items: end; margin-bottom: var(--space-3);">
+              <div style="flex: 1;">
+                {{ ui.form_input(
+                  name='volunteer_names[]',
+                  label='Name',
+                  type='text',
+                  placeholder='John Doe',
+                  help_text='Volunteer full name'
+                ) }}
+              </div>
+              <div style="flex: 1;">
+                {{ ui.form_input(
+                  name='volunteer_emails[]',
+                  label='Email',
+                  type='email',
+                  placeholder='john.doe@auib.edu',
+                  help_text='Volunteer email address'
+                ) }}
+              </div>
+              <button type="button" class="btn btn--outline btn--sm" onclick="removeVolunteer(this)" style="margin-bottom: var(--space-2);">
+                <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button type="button" class="btn btn--secondary btn--sm" onclick="addVolunteer()">
+            <svg style="width: 1rem; height: 1rem; margin-right: var(--space-2);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Another Volunteer
+          </button>
+          <span class="form-help" style="display: block; margin-top: var(--space-2);">
+            Add volunteers manually. Each volunteer will receive an invitation link via email.
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <button type="submit" class="btn btn--primary btn--lg btn--full">
+          <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Create Event & Send Invitations
+        </button>
+      </div>
+    </form>
+
+    {% if links_info %}
+      <!-- Generated Links with Names -->
+      <hr style="margin: var(--space-8) 0; border: none; border-top: 1px solid var(--color-gray-200);">
+      
+      {{ ui.alert(
+        'Email invitations have been sent. If any failed, copy the links below and send them manually.',
+        type='success',
+        title='Event Created Successfully!'
+      ) }}
+
+      <div style="margin-top: var(--space-6);">
+        <h3 style="font-size: var(--text-lg); font-weight: var(--font-semibold); margin-bottom: var(--space-2);">
+          Generated Invitation Links
+        </h3>
+        <p style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-3);">
+          Copy these lines into your email client if automatic sending failed:
+        </p>
+        <textarea 
+          readonly 
+          rows="12"
+          class="form-textarea"
+          style="font-family: monospace; font-size: var(--text-sm);"
+          aria-label="Generated links with names">{% for it in links_info %}{{ it.name }} &lt;{{ it.email }}&gt;: {{ it.link }}
 {% endfor %}</textarea>
-    </div>
-  {% elif links %}
-    <div class="mt-6">
-      <h3 class="font-semibold">Generated Links</h3>
-      <p class="text-sm text-gray-500 mb-2">Copy these links to email to volunteers (they expire based on configured token expiry):</p>
-  <textarea readonly title="Generated links" aria-label="Generated links" class="w-full h-40 border rounded p-3 bg-gray-50">{% for l in links %}{{ l }}
+        <button type="button" 
+                class="btn btn--outline btn--sm"
+                style="margin-top: var(--space-3);"
+                data-copy-target="Generated links with names"
+                onclick="navigator.clipboard.writeText(this.previousElementSibling.value).then(() => alert('Links copied to clipboard!'))">
+          Copy All Links
+        </button>
+      </div>
+
+    {% elif links %}
+      <!-- Generated Links (no names) -->
+      <hr style="margin: var(--space-8) 0; border: none; border-top: 1px solid var(--color-gray-200);">
+      
+      {{ ui.alert(
+        'Event created! Copy the invitation links below to send to volunteers.',
+        type='info',
+        title='Invitation Links Generated'
+      ) }}
+
+      <div style="margin-top: var(--space-6);">
+        <h3 style="font-size: var(--text-lg); font-weight: var(--font-semibold); margin-bottom: var(--space-2);">
+          Invitation Links
+        </h3>
+        <p style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-3);">
+          These links expire based on your configured token expiry (default 24 hours):
+        </p>
+        <textarea 
+          readonly 
+          rows="8"
+          class="form-textarea"
+          style="font-family: monospace; font-size: var(--text-sm);"
+          aria-label="Generated links">{% for l in links %}{{ l }}
 {% endfor %}</textarea>
-    </div>
-  {% endif %}
+        <button type="button" 
+                class="btn btn--outline btn--sm"
+                style="margin-top: var(--space-3);"
+                onclick="navigator.clipboard.writeText(this.previousElementSibling.value).then(() => alert('Links copied to clipboard!'))">
+          Copy All Links
+        </button>
+      </div>
+    {% endif %}
+  {% endcall %}
+
+  <!-- Help Text -->
+  <div style="margin-top: var(--space-6);">
+    {{ ui.alert(
+      'Choose between uploading a CSV file or manually entering volunteer information. For CSV files, include "Email" (required) and "Name" (optional) columns.',
+      type='info',
+      title='Volunteer Entry Options'
+    ) }}
+  </div>
 </div>
+
+<script>
+function toggleAdvancedOptions() {
+  const advancedSection = document.getElementById('advanced-options');
+  const toggleButton = document.getElementById('advanced-toggle');
+  const isVisible = advancedSection.style.display !== 'none';
+  
+  if (isVisible) {
+    advancedSection.style.display = 'none';
+    toggleButton.innerHTML = `
+      <svg style="width: 1rem; height: 1rem; margin-right: var(--space-2);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+      </svg>
+      Show Advanced Options
+    `;
+  } else {
+    advancedSection.style.display = 'block';
+    toggleButton.innerHTML = `
+      <svg style="width: 1rem; height: 1rem; margin-right: var(--space-2);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+      </svg>
+      Hide Advanced Options
+    `;
+  }
+}
+
+function toggleEntryMethod() {
+  const method = document.querySelector('input[name="entry_method"]:checked').value;
+  const fileSection = document.getElementById('file-upload-section');
+  const manualSection = document.getElementById('manual-entry-section');
+  const fileInput = document.getElementById('file');
+  
+  if (method === 'file') {
+    fileSection.style.display = 'block';
+    manualSection.style.display = 'none';
+    fileInput.required = true;
+    // Clear manual entries
+    document.querySelectorAll('input[name="volunteer_names[]"], input[name="volunteer_emails[]"]').forEach(input => {
+      input.required = false;
+    });
+  } else {
+    fileSection.style.display = 'none';
+    manualSection.style.display = 'block';
+    fileInput.required = false;
+    // Make at least one volunteer entry required
+    const firstName = document.querySelector('input[name="volunteer_names[]"]');
+    const firstEmail = document.querySelector('input[name="volunteer_emails[]"]');
+    if (firstName) firstName.required = true;
+    if (firstEmail) firstEmail.required = true;
+  }
+}
+
+function addVolunteer() {
+  const container = document.getElementById('volunteers-container');
+  const volunteerCount = container.querySelectorAll('.volunteer-entry').length;
+  const volunteerLimit = parseInt(document.querySelector('input[name="volunteer_limit"]').value) || Infinity;
+  
+  if (volunteerCount >= volunteerLimit) {
+    alert(`Cannot add more volunteers. Limit is set to ${volunteerLimit}.`);
+    return;
+  }
+  
+  const newEntry = document.createElement('div');
+  newEntry.className = 'volunteer-entry';
+  newEntry.style.cssText = 'display: flex; gap: var(--space-3); align-items: end; margin-bottom: var(--space-3);';
+  
+  newEntry.innerHTML = `
+    <div style="flex: 1;">
+      <label class="form-label">Name</label>
+      <input type="text" name="volunteer_names[]" class="form-input" placeholder="John Doe">
+      <span class="form-help">Volunteer full name</span>
+    </div>
+    <div style="flex: 1;">
+      <label class="form-label">Email</label>
+      <input type="email" name="volunteer_emails[]" class="form-input" placeholder="john.doe@auib.edu">
+      <span class="form-help">Volunteer email address</span>
+    </div>
+    <button type="button" class="btn btn--outline btn--sm" onclick="removeVolunteer(this)" style="margin-bottom: var(--space-2);">
+      <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    </button>
+  `;
+  
+  container.appendChild(newEntry);
+}
+
+function removeVolunteer(button) {
+  const entry = button.closest('.volunteer-entry');
+  const container = document.getElementById('volunteers-container');
+  const entries = container.querySelectorAll('.volunteer-entry');
+  
+  // Don't remove if it's the last entry
+  if (entries.length > 1) {
+    entry.remove();
+  } else {
+    alert('At least one volunteer is required.');
+  }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  toggleEntryMethod();
+});
+</script>
 {% endblock %}

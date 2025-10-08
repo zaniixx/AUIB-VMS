@@ -1,28 +1,267 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Bulk Submissions{% endblock %}
+
 {% block body %}
-<div class="bg-white p-6 rounded-lg shadow max-w-4xl mx-auto">
-  <h2 class="text-2xl font-semibold mb-4">Pending Bulk Submissions</h2>
+<div class="content-wrapper">
+  <div style="margin-bottom: var(--space-8);">
+    <h1 style="margin-bottom: var(--space-2);">Pending Bulk Submissions</h1>
+    <p style="color: var(--color-gray-600);">
+      Review and approve bulk volunteer hour submissions from club leaders.
+    </p>
+  </div>
+
   {% if subs %}
-    <div class="space-y-4">
-    {% for s in subs %}
-      <div class="border rounded p-4">
-        <div class="flex items-start justify-between">
+    <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+      {%- for s in subs %}
+      {% call ui.card(title=s.project_name, compact=false) %}
+        <!-- Submission Metadata -->
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--color-gray-200);">
           <div>
-            <div class="font-medium">{{ s.project_name }}</div>
-            <div class="text-sm text-gray-500">Submitted by: {{ s.club_leader_id }} &middot; {{ s.created_at }}</div>
+            <div style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-1);">
+              <strong>Club Leader ID:</strong> {{ s.club_leader_id }}
+            </div>
+            <div style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-1);">
+              <strong>Date Range:</strong> {{ s.date_range or 'Not specified' }}
+            </div>
+            <div style="font-size: var(--text-sm); color: var(--color-gray-500);">
+              <strong>Submitted:</strong> {{ s.created_at.strftime('%Y-%m-%d %H:%M') if s.created_at else 'Unknown' }}
+            </div>
           </div>
-          <div class="flex items-center space-x-2">
-            <form method="post"><input type="hidden" name="id" value="{{ s.id }}" /><button type="submit" name="action" value="approve" class="bg-green-600 text-white px-3 py-1 rounded">Approve</button></form>
-            <form method="post"><input type="hidden" name="id" value="{{ s.id }}" /><input name="reason" placeholder="Rejection reason" class="border p-1 rounded"/><button type="submit" name="action" value="reject" class="bg-red-600 text-white px-3 py-1 rounded ml-2">Reject</button></form>
+          <div>
+            {{ ui.status_badge(s.status) }}
           </div>
         </div>
-        <div class="mt-3 text-sm text-gray-700">{{ s.description }}</div>
-        <pre class="mt-3 p-3 bg-gray-50 rounded text-sm overflow-auto">{{ s.hours_data | tojson }}</pre>
-      </div>
-    {% endfor %}
+
+        <!-- Description -->
+        {% if s.description %}
+        <div style="margin-bottom: var(--space-4);">
+          <h4 style="font-size: var(--text-sm); font-weight: var(--font-semibold); margin-bottom: var(--space-2);">Description</h4>
+          <p style="color: var(--color-gray-700); font-size: var(--text-sm);">{{ s.description }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Individual Entries Table -->
+        <div style="margin-bottom: var(--space-4);">
+          <h4 style="font-size: var(--text-sm); font-weight: var(--font-semibold); margin-bottom: var(--space-2);">Volunteer Entries</h4>
+          <form method="post" id="form-{{ s.id }}">
+            <input type="hidden" name="bulk_submission_id" value="{{ s.id }}" />
+
+            {% call ui.table_wrapper() %}
+              <thead>
+                <tr>
+                  <th style="width: 40px;">
+                    <input type="checkbox" id="select-all-{{ s.id }}" onchange="toggleAllEntries('{{ s.id }}')" title="Select all pending entries" aria-label="Select all entries for this submission" />
+                  </th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Hours</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {%- for entry in s.entries %}
+                <tr>
+                  <td>
+                    {% if entry.status == 'PENDING' %}
+                      <input type="checkbox" name="entry_ids[]" value="{{ entry.id }}" class="entry-checkbox-{{ s.id }}" data-submission-id="{{ s.id }}" title="Select {{ entry.name }}" />
+                    {% else %}
+                      <span style="color: var(--color-gray-400);" title="Already processed">✓</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ entry.name }}</td>
+                  <td>{{ entry.email }}</td>
+                  <td>{{ entry.hours }}</td>
+                  <td>{{ entry.role }}</td>
+                  <td>{{ ui.status_badge(entry.status) }}</td>
+                </tr>
+                {%- endfor %}
+              </tbody>
+            {% endcall %}
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; padding-top: var(--space-4); border-top: 1px solid var(--color-gray-200); margin-top: var(--space-4);">
+              <!-- Approve Selected -->
+        <button type="submit"
+          name="action"
+          value="approve_selected"
+          class="btn btn--success btn--sm"
+          onclick="return confirmSelectedAction('approve', this.closest('form'))"
+          >
+                <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Approve Selected
+              </button>
+
+              <!-- Reject Selected -->
+              <div style="display: flex; align-items: center; gap: var(--space-2);">
+                <input type="text"
+                       name="rejection_reason_selected"
+                       id="rejection_reason_selected_{{ s.id }}"
+                       placeholder="Rejection reason (required)"
+                       class="form-input"
+                       style="min-width: 200px; margin: 0;" />
+    <button type="submit"
+      name="action"
+      value="reject_selected"
+      class="btn btn--danger btn--sm"
+      onclick="return confirmSelectedAction('reject', this.closest('form'))"
+      >
+                  <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Reject Selected
+                </button>
+              </div>
+
+              <!-- Bulk Actions -->
+              <div style="border-left: 1px solid var(--color-gray-300); padding-left: var(--space-3); margin-left: var(--space-2);">
+                <button type="submit"
+                        name="action"
+                        value="approve_all"
+                        class="btn btn--success btn--sm"
+                        data-confirm="Are you sure you want to approve all pending entries in this submission?">
+                  <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Approve All Pending
+                </button>
+
+                <div style="display: inline-flex; align-items: center; gap: var(--space-2); margin-left: var(--space-2);">
+                  <input type="text"
+                         name="rejection_reason"
+                         placeholder="Rejection reason"
+                         class="form-input"
+                         style="min-width: 180px; margin: 0;" />
+                  <button type="submit"
+                          name="action"
+                          value="reject_all"
+                          class="btn btn--danger btn--sm"
+                          data-confirm="Are you sure you want to reject all pending entries in this submission?">
+                    <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Reject All Pending
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      {% endcall %}
+      {%- endfor %}
     </div>
   {% else %}
-    <div class="text-gray-600">No pending submissions.</div>
+    {% call ui.card(title='No Pending Submissions') %}
+      {{ ui.empty_state(
+        'All Caught Up!',
+        'There are no pending bulk submissions to review at this time.'
+      ) }}
+    {% endcall %}
   {% endif %}
 </div>
 {% endblock %}
+
+<script>
+function toggleAllEntries(submissionId) {
+  const selectAllCheckbox = document.getElementById(`select-all-${submissionId}`);
+  if (!selectAllCheckbox) return;
+
+  const entryCheckboxes = Array.from(document.querySelectorAll(`.entry-checkbox-${submissionId}`));
+
+  // Only toggle checkboxes that are enabled (pending entries)
+  entryCheckboxes.forEach(checkbox => {
+    try {
+      if (!checkbox.disabled) {
+        checkbox.checked = selectAllCheckbox.checked;
+        // trigger change event so any listeners and UI updates run
+        try {
+          checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (e) {
+          // older browsers
+          var ev = document.createEvent('HTMLEvents');
+          ev.initEvent('change', true, false);
+          checkbox.dispatchEvent(ev);
+        }
+      }
+    } catch (e) {
+      // ignore unexpected nodes
+    }
+  });
+
+  updateButtonStates(submissionId);
+}
+
+function updateButtonStates(submissionId) {
+  const entryCheckboxes = document.querySelectorAll(`.entry-checkbox-${submissionId}:checked`);
+  const approveBtn = document.querySelector(`#form-${submissionId} button[name="action"][value="approve_selected"]`);
+  const rejectBtn = document.querySelector(`#form-${submissionId} button[name="action"][value="reject_selected"]`);
+
+  const hasSelection = entryCheckboxes && entryCheckboxes.length > 0;
+  if (approveBtn) {
+    approveBtn.disabled = !hasSelection;
+  }
+  if (rejectBtn) {
+    rejectBtn.disabled = !hasSelection;
+  }
+}
+
+// Update button states when individual checkboxes change
+document.addEventListener('DOMContentLoaded', function() {
+  // Prefer event delegation: capture changes to any entry checkbox (works for dynamic content too)
+  document.addEventListener('change', function(evt) {
+    const target = evt.target;
+    if (!target) return;
+
+    // Only react to entry checkboxes
+    if (target.name === 'entry_ids[]' || (target.className && target.className.startsWith && target.className.startsWith('entry-checkbox-'))) {
+      const submissionId = target.getAttribute('data-submission-id') || (target.className || '').toString().split('-').pop();
+      if (!submissionId) return;
+
+      // Update per-form button states
+      updateButtonStates(submissionId);
+
+      // Update select-all checkbox state for this submission
+      const selectAllCheckbox = document.getElementById(`select-all-${submissionId}`);
+      const entryCheckboxes = document.querySelectorAll(`.entry-checkbox-${submissionId}`);
+      const checkedBoxes = document.querySelectorAll(`.entry-checkbox-${submissionId}:checked`);
+      if (selectAllCheckbox) {
+        selectAllCheckbox.checked = entryCheckboxes.length === checkedBoxes.length && entryCheckboxes.length > 0;
+        selectAllCheckbox.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < entryCheckboxes.length;
+      }
+    }
+  });
+
+  // Initialize button states for each form on load
+  document.querySelectorAll('form[id^="form-"]').forEach(form => {
+    const submissionId = form.id.replace('form-','');
+    if (submissionId) updateButtonStates(submissionId);
+  });
+});
+
+function confirmSelectedAction(action, formOrId) {
+  // formOrId may be a DOM element (form) or a string id
+  const form = (typeof formOrId === 'string') ? document.getElementById(formOrId) : formOrId;
+  const checkedBoxes = form.querySelectorAll('input[name="entry_ids[]"]:checked');
+  if (checkedBoxes.length === 0) {
+    alert('Please select at least one entry.');
+    return false;
+  }
+
+  if (action === 'approve') {
+    return confirm(`Are you sure you want to approve ${checkedBoxes.length} selected entries?`);
+  } else if (action === 'reject') {
+    const reasonInput = form.querySelector('input[name="rejection_reason_selected"]');
+    if (!reasonInput || !reasonInput.value.trim()) {
+      alert('Please provide a rejection reason.');
+      return false;
+    }
+    return confirm(`Are you sure you want to reject ${checkedBoxes.length} selected entries?`);
+  }
+
+  return true;
+}
+</script>

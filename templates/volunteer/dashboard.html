@@ -1,87 +1,191 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Volunteer Dashboard{% endblock %}
+
 {% block body %}
-<div class="container mx-auto p-6">
-  <h1 class="text-3xl font-semibold mb-4">Volunteer Dashboard</h1>
+<div class="content-wrapper">
+  <div style="margin-bottom: var(--space-8);">
+    <h1 style="margin-bottom: var(--space-2);">Volunteer Dashboard</h1>
+    <p style="color: var(--color-gray-600);">
+      Sign up for events, track your volunteer hours, and view your service history.
+    </p>
+  </div>
 
-  <section class="mb-6">
-    <h2 class="text-2xl font-medium">Active events</h2>
+  <!-- Active Events Section -->
+  {% call ui.card(title='Active Events', subtitle='Events currently in progress - request to join with officer approval') %}
     {% if active %}
-      <ul class="space-y-3 mt-3">
-      {% for item in active %}
-        <li class="p-4 bg-white rounded shadow flex justify-between items-center">
-          <div>
-            <div class="font-semibold">{{ item.event.name }} <span class="text-sm text-gray-500">({{ item.event.display_date }})</span></div>
-            <div class="text-sm text-gray-600">{{ item.event.location }}</div>
-            <div class="text-sm text-gray-500">Signups: {{ item.count or 0 }}</div>
+      <div style="display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-4);" role="list">
+        {%- for item in active %}
+        <div class="card card--compact" style="border: 1px solid var(--color-warning-300); background: var(--color-warning-50);" role="listitem">
+          <div style="display: flex; justify-content: space-between; align-items: start; gap: var(--space-4); flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px;">
+              <div style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">
+                {{ item.event.name }}
+                {{ ui.badge('ACTIVE', variant='warning') }}
+                {{ ui.badge(item.event.display_date, variant='gray') }}
+              </div>
+              <div style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-1);">
+                <svg style="width: 1rem; height: 1rem; display: inline-block; vertical-align: text-bottom;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {{ item.event.location }}
+              </div>
+              <div style="font-size: var(--text-sm); color: var(--color-gray-500);">
+                <svg style="width: 1rem; height: 1rem; display: inline-block; vertical-align: text-bottom;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                {{ item.count or 0 }} volunteer{{ 's' if (item.count or 0) != 1 else '' }} signed up
+              </div>
+            </div>
+            <div style="display: flex; align-items: center;">
+              {% if item.status == 'PENDING_APPROVAL' %}
+                {{ ui.badge('Approval Pending', variant='warning') }}
+              {% elif item.status == 'APPROVED' %}
+                {{ ui.badge('Approved', variant='success') }}
+              {% elif item.status == 'REJECTED' %}
+                {{ ui.badge('Rejected', variant='error') }}
+              {% else %}
+                <form method="post" action="{{ url_for('auth.signup_event') }}" style="margin: 0;">
+                  <input type="hidden" name="event_id" value="{{ item.event.id }}" />
+                  <button type="submit" class="btn btn--warning btn--sm">
+                    <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Request to Join
+                  </button>
+                </form>
+              {% endif %}
+            </div>
           </div>
-          <div>
-            {% if item.signed %}
-              <form method="post" action="{{ url_for('auth.cancel_signup') }}">
-                <input type="hidden" name="event_id" value="{{ item.event.id }}" />
-                <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded">Cancel</button>
-              </form>
-            {% else %}
-              <form method="post" action="{{ url_for('auth.signup_event') }}">
-                <input type="hidden" name="event_id" value="{{ item.event.id }}" />
-                <button type="submit" class="px-3 py-1 bg-auib-accent text-white rounded">Sign up</button>
-              </form>
-            {% endif %}
-          </div>
-        </li>
-      {% endfor %}
-      </ul>
+        </div>
+        {%- endfor %}
+      </div>
     {% else %}
-      <p class="text-gray-600">No active events right now.</p>
+      {{ ui.empty_state(
+        'No Active Events',
+        'There are no events currently in progress. Check upcoming events to sign up in advance!'
+      ) }}
     {% endif %}
-  </section>
+  {% endcall %}
 
-  <section class="mb-6">
-    <h2 class="text-2xl font-medium">Upcoming events</h2>
-    {% if upcoming %}
-      <ul class="space-y-3 mt-3">
-      {% for item in upcoming %}
-        <li class="p-4 bg-white rounded shadow flex justify-between items-center">
-          <div>
-            <div class="font-semibold">{{ item.event.name }} <span class="text-sm text-gray-500">({{ item.event.display_date }})</span></div>
-            <div class="text-sm text-gray-600">{{ item.event.location }}</div>
-            <div class="text-sm text-gray-500">Signups: {{ item.count or 0 }}</div>
+  <!-- Upcoming Events Section -->
+  <div style="margin-top: var(--space-8);">
+    {% call ui.card(title='Upcoming Events', subtitle='Future events you can sign up for') %}
+      {% if upcoming %}
+        <div style="display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-4);" role="list">
+          {%- for item in upcoming %}
+          <div class="card card--compact" style="border: 1px solid var(--color-gray-300);" role="listitem">
+            <div style="display: flex; justify-content: space-between; align-items: start; gap: var(--space-4); flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 250px;">
+                <div style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">
+                  {{ item.event.name }}
+                  {{ ui.badge(item.event.display_date, variant='gray') }}
+                </div>
+                <div style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-1);">
+                  <svg style="width: 1rem; height: 1rem; display: inline-block; vertical-align: text-bottom;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {{ item.event.location }}
+                </div>
+                <div style="font-size: var(--text-sm); color: var(--color-gray-500);">
+                  <svg style="width: 1rem; height: 1rem; display: inline-block; vertical-align: text-bottom;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  {{ item.count or 0 }} volunteer{{ 's' if (item.count or 0) != 1 else '' }} signed up
+                </div>
+              </div>
+              <div style="display: flex; align-items: center;">
+                {% if item.status == 'SIGNED_UP' %}
+                  <form method="post" action="{{ url_for('auth.cancel_signup') }}" style="margin: 0;">
+                    <input type="hidden" name="event_id" value="{{ item.event.id }}" />
+                    <button type="submit" 
+                            class="btn btn--danger btn--sm"
+                            data-confirm="Are you sure you want to cancel your signup for this event?">
+                      Cancel Signup
+                    </button>
+                  </form>
+                {% elif item.status %}
+                  {{ ui.badge(item.status.replace('_', ' ').title(), variant='info') }}
+                {% else %}
+                  <form method="post" action="{{ url_for('auth.signup_event') }}" style="margin: 0;">
+                    <input type="hidden" name="event_id" value="{{ item.event.id }}" />
+                    <button type="submit" class="btn btn--primary btn--sm">
+                      <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Sign Up
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
           </div>
-          <div>
-            {% if item.signed %}
-              <form method="post" action="{{ url_for('auth.cancel_signup') }}">
-                <input type="hidden" name="event_id" value="{{ item.event.id }}" />
-                <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded">Cancel</button>
-              </form>
-            {% else %}
-              <form method="post" action="{{ url_for('auth.signup_event') }}">
-                <input type="hidden" name="event_id" value="{{ item.event.id }}" />
-                <button type="submit" class="px-3 py-1 bg-auib-accent text-white rounded">Sign up</button>
-              </form>
-            {% endif %}
-          </div>
-        </li>
-      {% endfor %}
-      </ul>
-    {% else %}
-      <p class="text-gray-600">No upcoming events scheduled.</p>
-    {% endif %}
-  </section>
+          {%- endfor %}
+        </div>
+      {% else %}
+        {{ ui.empty_state(
+          'No Upcoming Events',
+          'No events are scheduled at the moment. Check back later for new volunteer opportunities!'
+        ) }}
+      {% endif %}
+    {% endcall %}
+  </div>
 
-  <section>
-    <h2 class="text-2xl font-medium">Past volunteering</h2>
-    {% if past %}
-      <ul class="space-y-3 mt-3">
-        {% for row in past %}
-        <li class="p-4 bg-white rounded shadow">
-          <div class="font-semibold">{{ row.event.name }}</div>
-          <div class="text-sm text-gray-600">{{ row.event.display_date }} — {{ row.event.location }}</div>
-          <div class="text-sm mt-2">Status: {{ row.timelog.status }} | Hours: {{ row.timelog.calculated_hours or '—' }}</div>
-        </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="text-gray-600">You have no previous volunteering records.</p>
-    {% endif %}
-  </section>
+  <!-- Past Volunteering Section -->
+  <div style="margin-top: var(--space-8);">
+    {% call ui.card(title='Past Volunteering', subtitle='Your volunteer history and completed hours') %}
+      {% if past %}
+        <div style="margin-top: var(--space-4);">
+          {% call ui.table_wrapper() %}
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Date</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Hours</th>
+              </tr>
+            </thead>
+            <tbody>
+              {%- for row in past %}
+              <tr>
+                <td>
+                  <div style="font-weight: var(--font-medium);">{{ row.event.name }}</div>
+                </td>
+                <td>
+                  <div style="font-size: var(--text-sm); color: var(--color-gray-600);">
+                    {{ row.event.display_date }}
+                  </div>
+                </td>
+                <td>
+                  <div style="font-size: var(--text-sm); color: var(--color-gray-600);">
+                    {{ row.event.location }}
+                  </div>
+                </td>
+                <td>
+                  {{ ui.status_badge(row.timelog.status) }}
+                </td>
+                <td>
+                  <div style="font-weight: var(--font-medium);">
+                    {{ row.timelog.calculated_hours if row.timelog.calculated_hours else '—' }}
+                  </div>
+                </td>
+              </tr>
+              {%- endfor %}
+            </tbody>
+          {% endcall %}
+          </div>
+        </div>
+      {% else %}
+        {{ ui.empty_state(
+          'No Volunteer History',
+          'You haven\'t completed any volunteer activities yet. Sign up for events above to get started!'
+        ) }}
+      {% endif %}
+    {% endcall %}
+  </div>
 </div>
 {% endblock %}

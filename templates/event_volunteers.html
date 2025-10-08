@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Event Volunteers - {{ event.name }}{% endblock %}
+
+{% block body %}
+<div class="content-wrapper">
+  <div style="margin-bottom: var(--space-8);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-4);">
+      <div>
+        <h1 style="margin-bottom: var(--space-2);">{{ event.name }}</h1>
+        <p style="color: var(--color-gray-600);">
+          Manage volunteers signed up for this event.
+        </p>
+        <div style="font-size: var(--text-sm); color: var(--color-gray-500); margin-top: var(--space-2);">
+          <strong>Date:</strong> {{ event.display_date }}<br>
+          <strong>Location:</strong> {{ event.location or 'Not specified' }}<br>
+          {% if event.volunteer_limit %}
+          <strong>Volunteer Limit:</strong> {{ event.volunteer_limit }}
+          {% endif %}
+        </div>
+      </div>
+      <a href="{{ url_for('officer.manage_events') }}" class="btn btn--outline">
+        <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Events
+      </a>
+    </div>
+  </div>
+
+  {% if volunteers %}
+    {% call ui.table_wrapper() %}
+      <thead>
+        <tr>
+          <th>Volunteer</th>
+          <th>Status</th>
+          <th>Hours Logged</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {%- for volunteer in volunteers %}
+        <tr>
+          <td>
+            <div style="font-weight: var(--font-medium);">{{ volunteer.volunteer_name }}</div>
+            <div style="font-size: var(--text-xs); color: var(--color-gray-500);">{{ volunteer.student_email }}</div>
+          </td>
+          <td>
+            {{ ui.status_badge(volunteer.status) }}
+          </td>
+          <td>
+            <div style="font-size: var(--text-sm);">
+              {% if volunteer.calculated_hours %}
+                {{ "%.2f"|format(volunteer.calculated_hours) }} hours
+              {% else %}
+                Not logged
+              {% endif %}
+            </div>
+            {% if volunteer.start_ts and volunteer.stop_ts %}
+            <div style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">
+              {{ volunteer.start_ts | format_datetime }} - {{ volunteer.stop_ts | format_datetime }}
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            {% if volunteer.status == 'APPROVED' %}
+            <form method="post" style="display: inline;">
+              <input type="hidden" name="volunteer_email" value="{{ volunteer.student_email }}" />
+              <button type="submit" 
+                      name="action" 
+                      value="remove"
+                      class="btn btn--danger btn--sm"
+                      data-confirm="Remove {{ volunteer.volunteer_name }} from this event? This will also remove their logged hours.">
+                <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Remove
+              </button>
+            </form>
+            {% else %}
+            <span style="font-size: var(--text-xs); color: var(--color-gray-500);">Pending approval</span>
+            {% endif %}
+          </td>
+        </tr>
+        {%- endfor %}
+      </tbody>
+    {% endcall %}
+  {% else %}
+    {% call ui.card(title='No Volunteers Yet') %}
+      {{ ui.empty_state(
+        'No One Signed Up',
+        'No volunteers have signed up for this event yet. Volunteers can join through the event requests system.'
+      ) }}
+    {% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

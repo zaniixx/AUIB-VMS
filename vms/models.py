@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, Float, Text, ForeignKey
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
+import uuid
 
 Base = declarative_base()
 
@@ -40,6 +41,16 @@ class Event(Base):
     end_ts = Column(DateTime, nullable=True)
     location = Column(String)
     description = Column(Text)
+    volunteer_limit = Column(Integer, nullable=True)  # Maximum number of volunteers allowed
+    # Additional event parameters
+    category = Column(String, nullable=True)  # Event category (community, environmental, etc.)
+    contact_name = Column(String, nullable=True)  # Event coordinator name
+    contact_email = Column(String, nullable=True)  # Event coordinator email
+    required_skills = Column(Text, nullable=True)  # Required skills for volunteers
+    equipment_needed = Column(Text, nullable=True)  # Equipment/supplies needed
+    min_age = Column(Integer, nullable=True)  # Minimum age requirement
+    max_age = Column(Integer, nullable=True)  # Maximum age limit
+    priority = Column(String, default='normal')  # Event priority (low, normal, high, urgent)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     @property
@@ -188,8 +199,21 @@ class BulkSubmission(Base):
     project_name = Column(String)
     date_range = Column(String)
     description = Column(Text)
-    status = Column(String, default='PENDING')
-    hours_data = Column(Text)  # store JSON serialized
+    status = Column(String, default='PENDING')  # PENDING, APPROVED, REJECTED, PARTIALLY_APPROVED
+    hours_data = Column(Text)  # store JSON serialized with individual approval status
+    rejection_reason = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class BulkSubmissionEntry(Base):
+    __tablename__ = 'bulk_submission_entries'
+    id = Column(String, primary_key=True)
+    bulk_submission_id = Column(String, ForeignKey('bulk_submissions.id'))
+    name = Column(String)
+    email = Column(String)
+    hours = Column(Float)
+    role = Column(String)  # What the member did
+    status = Column(String, default='PENDING')  # PENDING, APPROVED, REJECTED
     rejection_reason = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -220,4 +244,20 @@ class SettingAudit(Base):
     new_value = Column(Text, nullable=True)
     changed_by = Column(String, nullable=True)
     changed_at = Column(DateTime, default=datetime.utcnow)
+
+
+# Utility functions for ID generation
+def gen_id(prefix=''):
+    """Generate a unique ID with optional prefix"""
+    return prefix + str(uuid.uuid4())
+
+
+def next_timelog_id():
+    """Generate a unique timelog ID"""
+    return gen_id('tl_')
+
+
+def next_bulk_id():
+    """Generate a unique bulk submission ID"""
+    return gen_id('b_')
 

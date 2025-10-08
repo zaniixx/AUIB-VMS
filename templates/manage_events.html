@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Manage Events{% endblock %}
+
+{% block body %}
+<div class="content-wrapper">
+  <div style="margin-bottom: var(--space-8);">
+    <h1 style="margin-bottom: var(--space-2);">Manage Events</h1>
+    <p style="color: var(--color-gray-600);">
+      View, edit, and manage all events you have created.
+    </p>
+  </div>
+
+  <div style="margin-bottom: var(--space-6);">
+    <a href="{{ url_for('officer.create_event') }}" class="btn btn--primary">
+      <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      </svg>
+      Create New Event
+    </a>
+  </div>
+
+  {% if events %}
+    {% call ui.table_wrapper() %}
+      <thead>
+        <tr>
+          <th>Event Name</th>
+          <th>Date & Time</th>
+          <th>Location</th>
+          <th>Volunteers</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {%- for event in events %}
+        <tr>
+          <td>
+            <div style="font-weight: var(--font-medium);">{{ event.name }}</div>
+            {% if event.description %}
+            <div style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">
+              {{ event.description[:100] }}{% if event.description|length > 100 %}...{% endif %}
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-size: var(--text-sm);">
+              {{ event.display_date }}
+            </div>
+          </td>
+          <td>
+            <div style="font-size: var(--text-sm);">
+              {{ event.location or '—' }}
+            </div>
+          </td>
+          <td>
+            <div style="font-weight: var(--font-medium);">
+              {{ event_volunteers.get(event.id, 0) }}
+              {% if event.volunteer_limit %}
+              / {{ event.volunteer_limit }}
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            {% set now = datetime.now() %}
+            {% if event.start_ts %}
+              {% set event_start = event.start_ts.replace(tzinfo=None) if event.start_ts.tzinfo else event.start_ts %}
+              {% if event_start > now %}
+                {{ ui.status_badge('UPCOMING') }}
+              {% elif not event.end_ts or (event.end_ts.replace(tzinfo=None) if event.end_ts.tzinfo else event.end_ts) >= now %}
+                {{ ui.status_badge('ACTIVE') }}
+              {% else %}
+                {{ ui.status_badge('COMPLETED') }}
+              {% endif %}
+            {% else %}
+              {{ ui.status_badge('DRAFT') }}
+            {% endif %}
+          </td>
+          <td>
+            <div style="display: flex; gap: var(--space-2);">
+              <a href="{{ url_for('officer.view_event_volunteers', event_id=event.id) }}" class="btn btn--outline btn--sm">
+                <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                Volunteers
+              </a>
+              <a href="{{ url_for('officer.edit_event', event_id=event.id) }}" class="btn btn--ghost btn--sm">
+                <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit
+              </a>
+              <form method="post" action="{{ url_for('officer.delete_event', event_id=event.id) }}" style="display: inline;">
+                <button type="submit" class="btn btn--danger btn--sm"
+                        data-confirm="Are you sure you want to delete '{{ event.name }}'? This action cannot be undone.">
+                  <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {%- endfor %}
+      </tbody>
+    {% endcall %}
+  {% else %}
+    {% call ui.card(title='No Events Yet') %}
+      {{ ui.empty_state(
+        'Create Your First Event',
+        'You haven\'t created any events yet. Start by creating an event to organize volunteer activities.'
+      ) }}
+      <a href="{{ url_for('officer.create_event') }}" class="btn btn--primary" style="margin-top: var(--space-4);">
+        Create Event
+      </a>
+    {% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

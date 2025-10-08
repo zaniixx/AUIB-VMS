@@ -122,10 +122,11 @@ def send_email(subject, body, recipients, html=None, sender=None, async_send=Tru
             pwd = models.get_setting('SMTP_PASS') or app.config.get('MAIL_PASSWORD')
             use_tls = (models.get_setting('SMTP_USE_TLS') == '1') or bool(app.config.get('MAIL_USE_TLS'))
             use_ssl = (models.get_setting('SMTP_USE_SSL') == '1') or bool(app.config.get('MAIL_USE_SSL'))
+            skip_auth = (models.get_setting('SMTP_SKIP_AUTH') == '1')
         except Exception:
             host, port, user, pwd, use_tls, use_ssl = ('127.0.0.1', 25, None, None, False, False)
 
-        cfg_key = (host, port, user, use_tls, use_ssl)
+        cfg_key = (host, port, user, use_tls, use_ssl, skip_auth)
         client = None
         now = time.time()
         try:
@@ -141,8 +142,41 @@ def send_email(subject, body, recipients, html=None, sender=None, async_send=Tru
                 if use_tls and not use_ssl:
                     client.starttls()
                     client.ehlo()
-                if user and pwd:
-                    client.login(user, pwd)
+                if user and pwd and not skip_auth:
+                    # Check if server supports AUTH before attempting login
+                    try:
+                        app.logger.debug('SMTP esmtp_features: %s', client.esmtp_features)
+                    except Exception:
+                        pass
+                    
+                    # For known providers (Gmail, Outlook), always try to authenticate
+                    # For others, check AUTH support first
+                    is_known_provider = host in ('smtp.gmail.com', 'smtp-mail.outlook.com', 'outlook.office365.com')
+                    
+                    if is_known_provider or 'AUTH' in client.esmtp_features or any(key.startswith('AUTH') for key in client.esmtp_features):
+                        try:
+                            client.login(user, pwd)
+                        except smtplib.SMTPAuthenticationError as auth_err:
+                            # Authentication failed - this is a real error for known providers
+                            if is_known_provider:
+                                try:
+                                    app.logger.error('SMTP authentication failed for %s. For Gmail/Outlook, make sure you are using an App Password (not your regular password) if 2FA is enabled.', host)
+                                except Exception:
+                                    pass
+                            raise auth_err
+                        except Exception as auth_err:
+                            # Other authentication errors
+                            try:
+                                app.logger.error('SMTP authentication failed for %s: %s', host, str(auth_err))
+                            except Exception:
+                                pass
+                            raise auth_err
+                    else:
+                        # Server doesn't support AUTH - log warning but continue
+                        try:
+                            app.logger.warning('SMTP server %s:%s does not support AUTH extension - skipping authentication', host, port)
+                        except Exception:
+                            pass
                 _smtp_cache['client'] = client
                 _smtp_cache['cfg'] = cfg_key
                 _smtp_cache['ts'] = now

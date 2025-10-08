@@ -1,35 +1,54 @@
-<header class="auib-blue text-white">
-  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-    <a href="{{ url_for('auth.home_page') }}" class="flex items-center space-x-3">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6l4 2" />
-      </svg>
-      <div>
-        <div class="font-bold text-lg">AUIB Volunteers Management System</div>
-        <div class="text-sm text-gray-100">VMS</div>
-      </div>
+<header class="header">
+  <div class="header__inner">
+    <!-- Logo -->
+    <a href="{{ url_for('auth.home_page') }}" class="header__logo">
+      <i class="fas fa-users" style="width: 2rem; height: 2rem; display: inline-block; vertical-align: middle; margin-right: 0.5rem; font-size: 2rem;"></i>
+      <span style="display: inline-block; vertical-align: middle;">
+        <span style="display: block; font-size: var(--text-lg); font-weight: var(--font-bold);">AUIB VMS</span>
+        <span style="display: block; font-size: var(--text-xs); color: var(--color-gray-600);">Volunteer Management System</span>
+      </span>
     </a>
 
-    <nav class="flex items-center space-x-4">
+
+
+    <!-- Actions (Auth + Admin Preview) -->
+    <div class="header__actions">
       {% if current_user.is_authenticated %}
+        {# Admin-only preview controls: visible to admins (current_user.role) only #}
         {% if current_user.role == 'admin' %}
-          <a href="{{ url_for('admin.settings') }}" class="text-sm text-white hover:underline">Settings</a>
-          <a href="{{ url_for('admin.users') }}" class="text-sm text-white hover:underline">Users</a>
-        {% elif current_user.role == 'officer' %}
-          <a href="{{ url_for('officer.create_event') }}" class="text-sm text-white hover:underline">Create Event</a>
-          <a href="{{ url_for('admin.email_logs') }}" class="text-sm text-white hover:underline">Email Logs</a>
-        {% elif current_user.role in ('club_leader','clubleader') %}
-          <a href="{{ url_for('club.bulk_submit') }}" class="text-sm text-white hover:underline">Bulk Submit</a>
-        {% else %}
-          <a href="{{ url_for('auth.volunteer_dashboard') }}" class="text-sm text-white hover:underline">My Dashboard</a>
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            {% if is_viewing_as %}
+              <form method="post" action="{{ url_for('admin.stop_view_as') }}" style="margin: 0;">
+                <button type="submit" class="btn btn--warning btn--sm">
+                  Stop Viewing as {{ view_as_role }}
+                </button>
+              </form>
+            {% else %}
+              <form method="post" action="{{ url_for('admin.view_as') }}" style="display: flex; align-items: center; gap: var(--space-2); margin: 0;">
+                <label for="view_as_role" class="sr-only">Preview as role</label>
+                <select id="view_as_role" name="role" class="form-select" style="font-size: var(--text-sm); padding: var(--space-2) var(--space-3); width: auto;">
+                  <option value="student">Student</option>
+                  <option value="officer">Officer</option>
+                  <option value="club_leader">Club Leader</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <button type="submit" class="btn btn--outline btn--sm">Preview</button>
+              </form>
+            {% endif %}
+          </div>
         {% endif %}
 
-        <span class="px-3 py-1 bg-white text-auib-accent rounded text-sm">{{ current_user.email }} ({{ current_user.role }})</span>
-        <a href="{{ url_for('auth.logout') }}" class="text-sm text-white hover:underline">Logout</a>
+        <!-- User Info & Logout -->
+        <div style="display: flex; align-items: center; gap: var(--space-3);">
+          <span class="badge badge--primary" style="font-size: var(--text-sm);">
+            {{ current_user.email }} ({{ current_user.role }})
+          </span>
+          <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost btn--sm">Logout</a>
+        </div>
       {% else %}
-        <a href="{{ url_for('auth.login') }}" class="text-sm text-white hover:underline">Login</a>
-        <a href="{{ url_for('auth.register') }}" class="text-sm text-white hover:underline">Register</a>
+        <a href="{{ url_for('auth.login') }}" class="btn btn--outline btn--sm">Login</a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn--primary btn--sm">Register</a>
       {% endif %}
-    </nav>
+    </div>
   </div>
 </header>

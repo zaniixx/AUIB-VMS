@@ -1,11 +1,170 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}{{ club_name }} Dashboard{% endblock %}
+
 {% block body %}
-<div class="container mx-auto p-6">
-  <h1 class="text-3xl font-semibold mb-4">Club Leader Home</h1>
-  <p class="mb-4">Club leader quick actions:</p>
-  <ul class="list-disc list-inside">
-    <li><a href="{{ url_for('club.bulk_submit') }}" class="text-auib-accent">Submit Bulk Timelogs</a></li>
-    <li><a href="{{ url_for('auth.volunteer_dashboard') }}" class="text-auib-accent">Volunteer Dashboard</a></li>
-  </ul>
+<div class="content-wrapper">
+  <div style="margin-bottom: var(--space-8);">
+    <h1 style="margin-bottom: var(--space-2);">{{ club_name }} Dashboard</h1>
+    <p style="color: var(--color-gray-600);">
+      Manage your club's volunteer activities, submit bulk hours, and track participation.
+    </p>
+  </div>
+
+  <!-- Role Switcher -->
+  <div style="margin-bottom: var(--space-6); padding: var(--space-4); background: var(--color-gray-50); border-radius: var(--radius); border: 1px solid var(--color-gray-200);">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3);">
+      <div>
+        <h3 style="font-size: var(--text-sm); font-weight: var(--font-semibold); margin: 0; color: var(--color-gray-700);">View Mode</h3>
+        <p style="font-size: var(--text-xs); color: var(--color-gray-600); margin: var(--space-1) 0 0 0;">
+          Switch between managing your club and viewing as a volunteer
+        </p>
+      </div>
+      <div style="display: flex; gap: var(--space-2);">
+        <form method="post" action="{{ url_for('auth.switch_role', role='student') }}" style="display: inline;">
+          <button type="submit" 
+                  class="btn btn--outline btn--sm"
+                  {% if effective_role == 'student' %}disabled style="opacity: 0.6;"{% endif %}>
+            <i class="fas fa-user" style="width: 1rem; height: 1rem;"></i>
+            Volunteer View
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('auth.switch_role', role='club_leader') }}" style="display: inline;">
+          <button type="submit" 
+                  class="btn btn--primary btn--sm"
+                  {% if effective_role in ('club_leader', 'clubleader') %}disabled style="opacity: 0.6;"{% endif %}>
+            <i class="fas fa-building" style="width: 1rem; height: 1rem;"></i>
+            Club Dashboard
+          </button>
+        </form>
+        {% if view_as_role %}
+        <form method="post" action="{{ url_for('auth.reset_role') }}" style="display: inline;">
+          <button type="submit" class="btn btn--ghost btn--sm" title="Reset to default view">
+            <i class="fas fa-sync-alt" style="width: 1rem; height: 1rem;"></i>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Overview -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8);">
+    {% call ui.card(compact=true) %}
+      <div style="text-align: center;">
+        <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-primary); margin-bottom: var(--space-1);">
+          {{ pending_submissions }}
+        </div>
+        <div style="font-size: var(--text-sm); color: var(--color-gray-600);">
+          Pending Submissions
+        </div>
+      </div>
+    {% endcall %}
+
+    {% call ui.card(compact=true) %}
+      <div style="text-align: center;">
+        <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-success); margin-bottom: var(--space-1);">
+          {{ total_submissions }}
+        </div>
+        <div style="font-size: var(--text-sm); color: var(--color-gray-600);">
+          Total Submissions
+        </div>
+      </div>
+    {% endcall %}
+
+    {% call ui.card(compact=true) %}
+      <div style="text-align: center;">
+        <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-info); margin-bottom: var(--space-1);">
+          {{ total_volunteers }}
+        </div>
+        <div style="font-size: var(--text-sm); color: var(--color-gray-600);">
+          Club Volunteers
+        </div>
+      </div>
+    {% endcall %}
+  </div>
+
+  <!-- Quick Actions Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-6); margin-bottom: var(--space-8);">
+    <!-- Submit Bulk Hours Card -->
+    {% call ui.card(title='Submit Bulk Hours', compact=true) %}
+      <p style="color: var(--color-gray-600); font-size: var(--text-sm); margin-bottom: var(--space-4);">
+        Submit volunteer hours for multiple club members at once. Hours will be pending officer approval.
+      </p>
+      <a href="{{ url_for('club.submit_hours') }}" class="btn btn--primary btn--full">
+        <i class="fas fa-file-alt" style="width: 1.25rem; height: 1.25rem;"></i>
+        Submit Hours
+      </a>
+    {% endcall %}
+
+    <!-- View My Submissions Card -->
+    {% call ui.card(title='My Submissions', compact=true) %}
+      <p style="color: var(--color-gray-600); font-size: var(--text-sm); margin-bottom: var(--space-4);">
+        View the status and history of all your bulk hour submissions, including approval status and details.
+      </p>
+      <a href="{{ url_for('club.my_submissions') }}" class="btn btn--secondary btn--full">
+        <i class="fas fa-file-alt" style="width: 1.25rem; height: 1.25rem;"></i>
+        View Submissions
+      </a>
+    {% endcall %}
+
+    <!-- View Reports Card -->
+    {% call ui.card(title='View Reports', compact=true) %}
+      <p style="color: var(--color-gray-600); font-size: var(--text-sm); margin-bottom: var(--space-4);">
+        Access detailed reports on volunteer participation, hours logged, and club performance.
+      </p>
+      <a href="{{ url_for('officer.reports') }}" class="btn btn--secondary btn--full">
+        <i class="fas fa-chart-bar" style="width: 1.25rem; height: 1.25rem;"></i>
+        View Reports
+      </a>
+    {% endcall %}
+
+    <!-- Volunteer Dashboard Card -->
+    {% call ui.card(title='Volunteer Dashboard', compact=true) %}
+      <p style="color: var(--color-gray-600); font-size: var(--text-sm); margin-bottom: var(--space-4);">
+        View individual volunteer progress, hours logged, and participation history.
+      </p>
+      <a href="{{ url_for('auth.volunteer_dashboard') }}" class="btn btn--secondary btn--full">
+        <i class="fas fa-user" style="width: 1.25rem; height: 1.25rem;"></i>
+        Volunteer Dashboard
+      </a>
+    {% endcall %}
+  </div>
+
+  <!-- Recent Submissions -->
+  {% if recent_submissions %}
+  <div style="margin-bottom: var(--space-8);">
+    {% call ui.card(title='Recent Submissions') %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Date Range</th>
+              <th>Status</th>
+              <th>Submitted</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for submission in recent_submissions %}
+            <tr>
+              <td>{{ submission.project_name }}</td>
+              <td>{{ submission.date_range }}</td>
+              <td>
+                <span class="badge {% if submission.status == 'APPROVED' %}badge--success{% elif submission.status == 'PENDING' %}badge--warning{% else %}badge--danger{% endif %}">
+                  {{ submission.status }}
+                </span>
+              </td>
+              <td>{{ submission.created_at.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endcall %}
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}

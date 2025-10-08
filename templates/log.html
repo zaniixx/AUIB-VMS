@@ -11,7 +11,7 @@
 		{% if open %}
 			<div class="mt-4 p-4 bg-green-50 border border-green-200 rounded">
 				<div class="font-medium text-green-800">Open session</div>
-				<div class="text-sm text-green-700">Started at {{ start_display }}</div>
+				<div class="text-sm text-green-700">Started at {{ start_display | format_datetime }}</div>
 			</div>
 			<form method="post" class="mt-4">
 				<button type="submit" name="action" value="stop" class="w-full bg-red-600 text-white px-4 py-2 rounded">Stop</button>

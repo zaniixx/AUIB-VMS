@@ -107,6 +107,7 @@ tmp/
 node_modules/
 
 # others
+*.mmd
 *.bak
 
 # Keep the gitignore itself

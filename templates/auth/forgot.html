@@ -1,13 +1,45 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Forgot Password{% endblock %}
+
 {% block body %}
-<div class="max-w-md mx-auto bg-white p-6 rounded">
-  <h2 class="text-xl mb-4">Forgot password</h2>
-  <form method="post">
-    <label class="sr-only">Email</label>
-    <input name="email" placeholder="Email" class="border p-2 w-full" />
-    <div class="mt-4">
-      <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Send reset link</button>
+<div class="narrow-wrapper">
+  {% call ui.card(title='Reset Your Password', subtitle='Enter your email address and we\'ll send you a password reset link.') %}
+    <form method="POST" action="{{ url_for('auth.forgot_password') }}" data-validate>
+      {{ ui.form_input(
+        name='email',
+        label='Email Address',
+        type='email',
+        required=true,
+        placeholder='your.email@auib.edu',
+        autocomplete='email',
+        help_text='Enter the email address associated with your account'
+      ) }}
+
+      <div class="form-group">
+        <button type="submit" class="btn btn--primary btn--full">
+          Send Reset Link
+        </button>
+      </div>
+    </form>
+
+    <hr style="margin: var(--space-6) 0; border: none; border-top: 1px solid var(--color-gray-200);">
+
+    <div class="text-center">
+      <p style="margin-bottom: var(--space-3); color: var(--color-gray-600); font-size: var(--text-sm);">
+        Remember your password?
+      </p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn--ghost btn--full">
+        Back to Sign In
+      </a>
     </div>
-  </form>
+  {% endcall %}
+
+  {{ ui.alert(
+    'If an account exists with this email, you will receive a password reset link shortly. Please check your inbox and spam folder.',
+    type='info',
+    title='Check Your Email'
+  ) }}
 </div>
 {% endblock %}

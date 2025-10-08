@@ -1,8 +1,83 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Welcome{% endblock %}
+
 {% block body %}
-<div class="max-w-3xl mx-auto p-8">
-  <h1 class="text-3xl font-bold mb-4">Welcome to AUIB VMS</h1>
-  <p class="mb-4">Please <a class="text-auib-accent" href="{{ url_for('auth.login') }}">sign in</a> or <a class="text-auib-accent" href="{{ url_for('auth.register') }}">register as a volunteer</a>.</p>
-  <p class="text-gray-600">If you are an officer or admin, sign in to access your dashboard.</p>
+<div class="content-wrapper">
+  <!-- Hero Section -->
+  <div class="text-center mb-8">
+    <h1 style="margin-bottom: var(--space-4);">
+      Welcome to AUIB Volunteer Management System
+    </h1>
+    <p style="font-size: var(--text-lg); color: var(--color-gray-600); margin-bottom: var(--space-8);">
+      Track your volunteer hours, sign up for events, and make a difference in your community.
+    </p>
+  </div>
+
+  <!-- Main CTA Card -->
+  {% call ui.card(title='Get Started', subtitle='Join our community of volunteers or sign in to your account') %}
+    <div class="flex gap-4" style="flex-wrap: wrap; justify-content: center;">
+      <a href="{{ url_for('auth.register') }}" class="btn btn--primary btn--lg">
+        <i class="fas fa-user-plus" style="width: 1.25rem; height: 1.25rem;"></i>
+        Create Account
+      </a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn--outline btn--lg">
+        <i class="fas fa-sign-in-alt" style="width: 1.25rem; height: 1.25rem;"></i>
+        Sign In
+      </a>
+    </div>
+  {% endcall %}
+
+  <!-- Features Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-6); margin-top: var(--space-8);">
+    <!-- Feature 1: Track Hours -->
+    {% call ui.card(compact=true) %}
+      <div class="text-center">
+        <div style="width: 3rem; height: 3rem; margin: 0 auto var(--space-4); color: var(--color-primary-600);">
+          <i class="fas fa-clock" style="font-size: 3rem;"></i>
+        </div>
+        <h3 style="font-size: var(--text-lg); font-weight: var(--font-semibold); margin-bottom: var(--space-2);">Track Your Hours</h3>
+        <p style="color: var(--color-gray-600); font-size: var(--text-sm);">
+          Easily log volunteer hours with our simple timelog system. Get accurate records for certificates and reports.
+        </p>
+      </div>
+    {% endcall %}
+
+    <!-- Feature 2: Event Signup -->
+    {% call ui.card(compact=true) %}
+      <div class="text-center">
+        <div style="width: 3rem; height: 3rem; margin: 0 auto var(--space-4); color: var(--color-primary-600);">
+          <i class="fas fa-calendar-alt" style="font-size: 3rem;"></i>
+        </div>
+        <h3 style="font-size: var(--text-lg); font-weight: var(--font-semibold); margin-bottom: var(--space-2);">Sign Up for Events</h3>
+        <p style="color: var(--color-gray-600); font-size: var(--text-sm);">
+          Browse upcoming volunteer opportunities and sign up for events that match your interests and schedule.
+        </p>
+      </div>
+    {% endcall %}
+
+    <!-- Feature 3: Certificates -->
+    {% call ui.card(compact=true) %}
+      <div class="text-center">
+        <div style="width: 3rem; height: 3rem; margin: 0 auto var(--space-4); color: var(--color-primary-600);">
+          <i class="fas fa-award" style="font-size: 3rem;"></i>
+        </div>
+        <h3 style="font-size: var(--text-lg); font-weight: var(--font-semibold); margin-bottom: var(--space-2);">Earn Recognition</h3>
+        <p style="color: var(--color-gray-600); font-size: var(--text-sm);">
+          Generate official certificates and track your volunteer milestones. Build your community service portfolio.
+        </p>
+      </div>
+    {% endcall %}
+  </div>
+
+  <!-- Info Section -->
+  <div style="margin-top: var(--space-12);">
+    {{ ui.alert(
+      'Officers and administrators can access advanced features including event management, approvals, and reporting.',
+      type='info',
+      title='For Staff & Officers'
+    ) }}
+  </div>
 </div>
 {% endblock %}

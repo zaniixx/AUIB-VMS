@@ -1,35 +1,35 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
 {% block body %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
   <div class="col-span-2">
-    <div class="bg-white rounded-lg shadow p-6">
-    <h2 class="text-2xl font-semibold mb-2">Welcome to AUIB Volunteers Management System (VMS)</h2>
+    {% call ui.card() %}
+      <h2 class="text-2xl font-semibold mb-2">Welcome to AUIB Volunteers Management System (VMS)</h2>
       <p class="text-gray-600">Manage events, review club submissions, and export reports. Pick an action on the right or use the top navigation.</p>
       <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <a href="{{ url_for('officer.create_event') }}">
-            <div class="p-4 border rounded">
-            <h3 class="font-medium">Create Event</h3>
-            <p class="text-sm text-gray-500">Officers can create events and generate secure logging links for volunteers.</p>
-            </div>
+        <a href="{{ url_for('officer.create_event') }}" class="block">
+            {% call ui.card('Create Event') %}
+              <p class="text-sm text-gray-500">Officers can create events and generate secure logging links for volunteers.</p>
+            {% endcall %}
         </a>
-        <a href="{{ url_for('officer.timelogs') }}">
-        <div class="p-4 border rounded">
-          <h3 class="font-medium">Approve Timelogs</h3>
-          <p class="text-sm text-gray-500">Officer must approve hour logging and submited by volunteers.</p>
-        </div>
+        <a href="{{ url_for('officer.timelogs') }}" class="block">
+          {% call ui.card('Approve Timelogs') %}
+            <p class="text-sm text-gray-500">Officer must approve hour logging and submitted by volunteers.</p>
+          {% endcall %}
         </a>
       </div>
-    </div>
+    {% endcall %}
   </div>
-  <aside class="bg-white rounded-lg shadow p-4">
-    <h3 class="font-semibold mb-3">Quick Links</h3>
-    <ul class="space-y-2 text-sm">
-      <li><a href="{{ url_for('officer.create_event') }}" class="text-auib-accent hover:underline">Create Event & Generate Links</a></li>
-      <li><a href="{{ url_for('officer.approvals') }}" class="text-auib-accent hover:underline">Approve Bulk Submissions</a></li>
-      <li><a href="{{ url_for('officer.timelogs') }}" class="text-auib-accent hover:underline">Review Pending Timelogs</a></li>
-      <li><a href="{{ url_for('officer.reports') }}" class="text-auib-accent hover:underline">Generate Reports</a></li>
-      <li><a href="{{ url_for('club.submit_hours') }}" class="text-auib-accent hover:underline">Submit Bulk Hours</a></li>
-    </ul>
+  <aside>
+    {% call ui.card('Quick Links') %}
+      <ul class="space-y-2 text-sm">
+        <li><a href="{{ url_for('officer.create_event') }}" class="text-auib-accent hover:underline">Create Event & Generate Links</a></li>
+        <li><a href="{{ url_for('officer.approvals') }}" class="text-auib-accent hover:underline">Approve Bulk Submissions</a></li>
+        <li><a href="{{ url_for('officer.timelogs') }}" class="text-auib-accent hover:underline">Review Pending Timelogs</a></li>
+        <li><a href="{{ url_for('officer.reports') }}" class="text-auib-accent hover:underline">Generate Reports</a></li>
+        <li><a href="{{ url_for('club.submit_hours') }}" class="text-auib-accent hover:underline">Submit Bulk Hours</a></li>
+      </ul>
+    {% endcall %}
   </aside>
 </div>
 {% endblock %}

@@ -8,7 +8,20 @@ SessionLocal = None
 def init_db(app):
     global SessionLocal
     db_url = app.config.get('DATABASE_URL')
-    engine = create_engine(db_url, connect_args={'check_same_thread': False} if db_url.startswith('sqlite') else {})
+    # Allow optional tuning of the SQLAlchemy QueuePool via app config.
+    # Reasonable defaults mirror SQLAlchemy's defaults (pool_size=5, max_overflow=10).
+    pool_opts = {}
+    # Only pass pool sizing options for DBs that support them (not necessary for SQLite file DB)
+    if not db_url.startswith('sqlite'):
+        pool_opts['pool_size'] = int(app.config.get('DB_POOL_SIZE', 5))
+        pool_opts['max_overflow'] = int(app.config.get('DB_MAX_OVERFLOW', 10))
+        pool_opts['pool_timeout'] = int(app.config.get('DB_POOL_TIMEOUT', 30))
+        # help detect stale connections
+        pool_opts['pool_pre_ping'] = True
+
+    engine = create_engine(db_url,
+                           connect_args={'check_same_thread': False} if db_url.startswith('sqlite') else {},
+                           **pool_opts)
     SessionLocal = scoped_session(sessionmaker(bind=engine))
 
     # import models and create tables

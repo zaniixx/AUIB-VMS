@@ -1,34 +1,131 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Users by Role - Admin{% endblock %}
+
 {% block body %}
-<div class="bg-white p-6 rounded shadow max-w-6xl mx-auto">
-  <h2 class="text-2xl font-semibold mb-4">Users grouped by role</h2>
-  {% for role, users in grouped.items() %}
-  <div class="mb-6">
-    <h3 class="text-xl font-semibold">{{ role | capitalize }} <span class="text-sm text-gray-500">({{ users|length }})</span></h3>
-    <table class="min-w-full bg-white mt-2">
-      <thead>
-        <tr>
-          <th class="px-4 py-2">Email</th>
-          <th class="px-4 py-2">Name</th>
-          <th class="px-4 py-2">Club</th>
-          <th class="px-4 py-2">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for u in users %}
-        <tr class="border-t">
-          <td class="px-4 py-2">{{ u.email }}</td>
-          <td class="px-4 py-2">{{ u.name or '-' }}</td>
-          <td class="px-4 py-2">{{ u.club_id or '-' }}</td>
-          <td class="px-4 py-2">
-            <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="text-sm text-auib-accent">Edit</a>
-            <form method="post" action="{{ url_for('admin.delete_user', user_id=u.id) }}" class="inline-block ml-2" onsubmit="return confirm('Delete user {{ u.email }}?');"><button type="submit" class="text-sm text-red-600">Delete</button></form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div class="container" style="padding-top: var(--space-6); padding-bottom: var(--space-6);">
+  
+  <!-- Page Header -->
+  <div style="margin-bottom: var(--space-6);">
+    <h1 class="text-3xl" style="margin-bottom: var(--space-2);">Users by Role</h1>
+    <p class="text-muted">View all users organized by their assigned roles and permissions.</p>
   </div>
-  {% endfor %}
+
+  <!-- Role Sections -->
+  <div style="display: grid; gap: var(--space-6);">
+    {% for role, users in grouped.items() %}
+      <div class="card">
+        <div class="card__header">
+          <h2 class="text-xl font-semibold">
+            {{ role.replace('_', ' ')|title }}
+            <span class="badge badge--info" style="margin-left: var(--space-2);">{{ users|length }}</span>
+          </h2>
+          <p class="text-sm text-muted">
+            {% if role == 'admin' %}
+              Full system administrators with complete access
+            {% elif role == 'officer' %}
+              Can create events, approve hours, and manage volunteers
+            {% elif role == 'club_leader' %}
+              Can submit bulk volunteer hours for their club
+            {% elif role == 'student' %}
+              Can sign up for volunteer events and track their hours
+            {% endif %}
+          </p>
+        </div>
+        
+        {% if users %}
+          {% call ui.table_wrapper() %}
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Name</th>
+                  <th>Club ID</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for user in users %}
+                  <tr>
+                    <td>
+                      <div class="font-medium">{{ user.email }}</div>
+                    </td>
+                    <td>
+                      <div class="text-sm">{{ user.name or 'Not set' }}</div>
+                    </td>
+                    <td>
+                      {% if user.club_id %}
+                        <code class="text-sm">{{ user.club_id }}</code>
+                      {% else %}
+                        <span class="text-muted">-</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <div class="text-sm text-muted">
+                        {% if user.created_at %}
+                          {{ user.created_at.strftime('%b %d, %Y') }}
+                        {% else %}
+                          N/A
+                        {% endif %}
+                      </div>
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn--small btn--primary">
+                          Edit
+                        </a>
+                        {% if role != 'admin' or (grouped.get('admin', []) | selectattr('id', 'ne', user.id) | list | length > 0) %}
+                          <button 
+                            type="button" 
+                            class="btn btn--small btn--danger"
+                            data-confirm="Are you sure you want to delete {{ user.name or user.email }}?"
+                            onclick="if(confirm(this.dataset.confirm)) { document.getElementById('delete-form-{{ user.id }}').submit(); }">
+                            Delete
+                          </button>
+                          <form id="delete-form-{{ user.id }}" action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="POST" style="display: none;">
+                          </form>
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% endcall %}
+        {% else %}
+          <div class="card__body">
+            {{ ui.empty_state(
+              'No Users in This Role',
+              'There are currently no users assigned to the ' + role.replace('_', ' ') + ' role.',
+              'Add User',
+              url_for('admin.edit_user')
+            ) }}
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Summary Stats -->
+  <div style="margin-top: var(--space-8); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+    {% set total_users = grouped.values() | sum(attribute='length') %}
+    <div class="card">
+      <div class="card__body" style="text-align: center;">
+        <div class="text-2xl font-semibold" style="color: var(--color-primary-600);">{{ total_users }}</div>
+        <div class="text-sm text-muted">Total Users</div>
+      </div>
+    </div>
+    {% for role, users in grouped.items() %}
+      <div class="card">
+        <div class="card__body" style="text-align: center;">
+          <div class="text-2xl font-semibold" style="color: var(--color-info-600);">{{ users|length }}</div>
+          <div class="text-sm text-muted">{{ role.replace('_', ' ')|title }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
 </div>
 {% endblock %}

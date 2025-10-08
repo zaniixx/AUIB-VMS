@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import login_user, logout_user, current_user, login_required
+import json
 
 from .models import seed_sample_users, gen_id, next_timelog_id
 from .db import get_db
@@ -42,13 +43,81 @@ def logout():
 def home_page():
     # Render different home pages based on authentication and role
     if current_user and getattr(current_user, 'is_authenticated', False):
-        role = getattr(current_user, 'role', '')
+        # Get effective role (considering view_as_role)
+        from flask import session
+        view_as_role = session.get('view_as_role')
+        user_role = getattr(current_user, 'role', '')
+        
+        if view_as_role:
+            if user_role == 'admin':
+                effective_role = view_as_role
+            elif user_role in ('club_leader', 'clubleader') and view_as_role in ('student', 'club_leader', 'clubleader'):
+                effective_role = view_as_role
+            else:
+                effective_role = user_role
+        else:
+            effective_role = user_role
+        
+        role = effective_role
         if role == 'admin':
             return render_template('home_admin.html')
         if role == 'officer':
-            return render_template('home_officer.html')
+            # Get officer dashboard stats
+            db = get_db()
+            now = datetime.utcnow()
+            
+            # Pending approvals count
+            pending_count = db.query(models.TimeLog).filter(models.TimeLog.status.in_(['PENDING', 'PENDING_APPROVAL'])).count()
+            
+            # Recent events created by this officer
+            recent_events = db.query(models.Event).filter_by(officer_id=current_user.id).order_by(models.Event.created_at.desc()).limit(3).all()
+            
+            # Active events (currently running)
+            active_events = db.query(models.Event).filter(
+                models.Event.start_ts <= now,
+                models.Event.end_ts > now
+            ).count()
+            
+            # Total events created
+            total_events = db.query(models.Event).filter_by(officer_id=current_user.id).count()
+            
+            return render_template('home_officer.html', 
+                                 pending_count=pending_count,
+                                 recent_events=recent_events,
+                                 active_events=active_events,
+                                 total_events=total_events)
         if role in ('club_leader', 'clubleader'):
-            return render_template('home_clubleader.html')
+            # Club leader statistics
+            db = get_db()
+            pending_submissions = db.query(models.BulkSubmission).filter_by(club_leader_id=current_user.id, status='PENDING').count()
+            total_submissions = db.query(models.BulkSubmission).filter_by(club_leader_id=current_user.id).count()
+            
+            # Get total unique volunteers from all submissions
+            all_submissions = db.query(models.BulkSubmission).filter_by(club_leader_id=current_user.id).all()
+            volunteer_emails = set()
+            for sub in all_submissions:
+                try:
+                    hours_data = json.loads(sub.hours_data or '[]')
+                    for entry in hours_data:
+                        volunteer_emails.add(entry.get('email', '').lower())
+                except:
+                    pass
+            total_volunteers = len(volunteer_emails)
+            
+            # Recent submissions (last 5)
+            recent_submissions = db.query(models.BulkSubmission).filter_by(club_leader_id=current_user.id).order_by(models.BulkSubmission.created_at.desc()).limit(5).all()
+            
+            # Get club name from club_id (simple mapping for now)
+            club_name = current_user.club_id or 'Club'
+            if club_name.startswith('club_'):
+                club_name = club_name.replace('club_', '').title() + ' Club'
+            
+            return render_template('home_clubleader.html',
+                                 pending_submissions=pending_submissions,
+                                 total_submissions=total_submissions,
+                                 total_volunteers=total_volunteers,
+                                 recent_submissions=recent_submissions,
+                                 club_name=club_name)
         # default for students/volunteers: try to provide a next upcoming event preview
         db = get_db()
         now = datetime.utcnow()
@@ -147,7 +216,7 @@ def volunteer_dashboard():
     # Upcoming and active events
     events = db.query(models.Event).order_by(models.Event.start_ts).all()
     upcoming = [e for e in events if e.start_ts and e.start_ts > now]
-    active = [e for e in events if e.start_ts and e.end_ts and e.start_ts <= now <= e.end_ts]
+    active = [e for e in events if e.start_ts and e.start_ts <= now and (not e.end_ts or e.end_ts > now)]
 
     # Timelogs for the current user (matched by email)
     user_email = getattr(current_user, 'email', None)
@@ -158,14 +227,17 @@ def volunteer_dashboard():
             timelogs.append({'timelog': tl, 'event': ev})
 
     # For each upcoming/active event determine if user already signed up
-    def user_signed(event):
-        return db.query(models.TimeLog).filter_by(student_email=user_email, event_id=event.id).first() is not None
+    def user_status(event):
+        timelog = db.query(models.TimeLog).filter_by(student_email=user_email, event_id=event.id).first()
+        if timelog:
+            return timelog.status
+        return None
 
     def signup_count(event):
-        return db.query(models.TimeLog).filter_by(event_id=event.id).count()
+        return db.query(models.TimeLog).filter(models.TimeLog.event_id == event.id, models.TimeLog.status.in_(['SIGNED_UP', 'APPROVED'])).count()
 
-    upcoming_info = [{'event': e, 'signed': user_signed(e), 'count': signup_count(e)} for e in upcoming]
-    active_info = [{'event': e, 'signed': user_signed(e), 'count': signup_count(e)} for e in active]
+    upcoming_info = [{'event': e, 'status': user_status(e), 'count': signup_count(e)} for e in upcoming]
+    active_info = [{'event': e, 'status': user_status(e), 'count': signup_count(e)} for e in active]
 
     return render_template('volunteer/dashboard.html', upcoming=upcoming_info, active=active_info, past=timelogs)
 
@@ -186,16 +258,32 @@ def signup_event():
     if not user_email:
         flash('Your account has no email associated; cannot sign up')
         return redirect(url_for('auth.volunteer_dashboard'))
-    # prevent duplicate signups
+    
+    now = datetime.utcnow()
+    is_active = event.start_ts and event.start_ts <= now and (not event.end_ts or event.end_ts > now)
+    
+    # prevent duplicate signups/requests
     existing = db.query(models.TimeLog).filter_by(student_email=user_email, event_id=event_id).first()
     if existing:
-        flash('You are already signed up for that event')
+        if existing.status == 'PENDING_APPROVAL':
+            flash('You have already requested to join this event. Please wait for officer approval.')
+        else:
+            flash('You are already signed up for that event')
         return redirect(url_for('auth.volunteer_dashboard'))
+    
     tid = next_timelog_id()
-    tl = models.TimeLog(id=tid, student_email=user_email, event_id=event_id, start_ts=None, stop_ts=None, status='SIGNED_UP')
-    db.add(tl)
-    db.commit()
-    flash('Signed up for event — good luck!')
+    if is_active:
+        # For active events, create a pending approval request
+        tl = models.TimeLog(id=tid, student_email=user_email, event_id=event_id, start_ts=None, stop_ts=None, status='PENDING_APPROVAL')
+        db.add(tl)
+        db.commit()
+        flash('Request submitted! Please wait for officer approval to join this active event.')
+    else:
+        # For upcoming events, direct signup
+        tl = models.TimeLog(id=tid, student_email=user_email, event_id=event_id, start_ts=None, stop_ts=None, status='SIGNED_UP')
+        db.add(tl)
+        db.commit()
+        flash('Signed up for event — good luck!')
     return redirect(url_for('auth.volunteer_dashboard'))
 
 
@@ -224,6 +312,37 @@ def cancel_signup():
     db.commit()
     flash('Your signup has been cancelled')
     return redirect(url_for('auth.volunteer_dashboard'))
+
+
+@bp.route('/switch-role/<role>', methods=['POST'])
+@login_required
+def switch_role(role):
+    """Allow club leaders to switch between volunteer and club leader views"""
+    if current_user.role not in ('club_leader', 'clubleader'):
+        abort(403)
+    
+    allowed_roles = {'student', 'club_leader', 'clubleader'}
+    if role not in allowed_roles:
+        flash('Invalid role selected.', 'danger')
+        return redirect(url_for('auth.home_page'))
+    
+    from flask import session
+    session['view_as_role'] = role
+    flash(f'Switched to {role.replace("_", " ").title()} view', 'success')
+    return redirect(url_for('auth.home_page'))
+
+
+@bp.route('/reset-role', methods=['POST'])
+@login_required
+def reset_role():
+    """Reset to default club leader view"""
+    if current_user.role not in ('club_leader', 'clubleader'):
+        abort(403)
+    
+    from flask import session
+    session.pop('view_as_role', None)
+    flash('Switched back to Club Leader view', 'info')
+    return redirect(url_for('auth.home_page'))
 
 
 @bp.app_context_processor

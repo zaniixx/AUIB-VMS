@@ -1,8 +1,9 @@
 """Simple dev CLI for VMS
 Usage:
-  python manage.py init-db
-  python manage.py seed
-  python manage.py runserver
+  python manage.py init-db     # Initialize database schema
+  python manage.py seed        # Seed database with sample data
+  python manage.py setup       # Initialize database AND seed with sample data
+  python manage.py runserver   # Start development server
 """
 import sys
 
@@ -13,15 +14,34 @@ def init_db():
         from vms.db import init_db, get_db
         # init_db already called by create_app; ensure tables exist
         print('Database initialized (create_all performed at app startup).')
+        print("\n📝 Demo Credentials (run 'python manage.py seed' to populate):")
+        print("   Admin:        admin@auib.edu / admin123")
+        print("   Officer:      officer@auib.edu / officer123")
+        print("   Club Leader:  leader.tech@auib.edu / leader123")
+        print("   Student:      student@auib.edu / student123")
 
 
 def seed():
     from vms import create_app
     app = create_app()
     with app.app_context():
-        from vms.models import seed_sample_users
-        seed_sample_users()
-        print('Seeded sample users')
+        # Use the comprehensive seeding from seed_data.py instead of the basic one
+        from seed_data import main as seed_main
+        seed_main()
+
+
+def setup():
+    """Initialize database and seed with sample data"""
+    from vms import create_app
+    app = create_app()
+    with app.app_context():
+        from vms.db import init_db, get_db
+        # init_db already called by create_app; ensure tables exist
+        print('Database initialized (create_all performed at app startup).')
+        
+        # Use the comprehensive seeding from seed_data.py
+        from seed_data import main as seed_main
+        seed_main()
 
 
 def runserver():
@@ -43,6 +63,8 @@ if __name__ == '__main__':
             init_db()
         elif cmd == 'seed':
             seed()
+        elif cmd == 'setup':
+            setup()
         elif cmd == 'runserver':
             runserver()
         else:

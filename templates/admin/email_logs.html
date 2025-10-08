@@ -1,70 +1,185 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Email Logs - Admin{% endblock %}
+
 {% block body %}
-<div class="bg-white p-6 rounded shadow max-w-6xl mx-auto">
-  <h2 class="text-2xl font-semibold mb-4">Email Logs</h2>
-
-  <form method="get" class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-    <label class="sr-only">Search recipient</label>
-    <input type="text" name="q" placeholder="recipient contains..." value="{{ q or '' }}" class="border p-2" />
-    <label class="sr-only">Status</label>
-    <select name="status" class="border p-2" title="Status filter">
-      <option value="">All status</option>
-      <option value="SENT" {% if status=='SENT' %}selected{% endif %}>SENT</option>
-      <option value="QUEUED" {% if status=='QUEUED' %}selected{% endif %}>QUEUED</option>
-      <option value="FAILED" {% if status=='FAILED' %}selected{% endif %}>FAILED</option>
-    </select>
-    <label class="sr-only">Start date</label>
-    <input type="date" name="start" value="{{ start or '' }}" class="border p-2" title="Start date" />
-    <label class="sr-only">End date</label>
-    <input type="date" name="end" value="{{ end or '' }}" class="border p-2" title="End date" />
-    <div class="md:col-span-4 flex gap-2">
-      <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Filter</button>
-      <a href="{{ url_for('admin.email_logs') }}" class="px-4 py-2 border rounded">Reset</a>
-    </div>
-  </form>
-
-  <div class="overflow-auto">
-    <table class="min-w-full bg-white">
-      <thead>
-        <tr>
-          <th class="px-4 py-2">When</th>
-          <th class="px-4 py-2">Recipient</th>
-          <th class="px-4 py-2">Subject</th>
-          <th class="px-4 py-2">Status</th>
-          <th class="px-4 py-2">Event</th>
-          <th class="px-4 py-2">Error</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for l in logs %}
-        <tr class="border-t">
-          <td class="px-4 py-2">{{ l.created_at }}</td>
-          <td class="px-4 py-2">{{ l.recipient }}</td>
-          <td class="px-4 py-2">{{ l.subject }}</td>
-          <td class="px-4 py-2">{{ l.status }}</td>
-          <td class="px-4 py-2">{{ l.event_id or '-' }}</td>
-          <td class="px-4 py-2">{{ l.error or '' }}</td>
-        </tr>
-        {% else %}
-        <tr><td class="px-4 py-2" colspan="6">No email logs found.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div class="container" style="padding-top: var(--space-6); padding-bottom: var(--space-6);">
+  
+  <!-- Page Header -->
+  <div style="margin-bottom: var(--space-6);">
+    <h1 class="text-3xl" style="margin-bottom: var(--space-2);">Email Logs</h1>
+    <p class="text-muted">Monitor email delivery status and troubleshoot communication issues.</p>
   </div>
 
-  {% if total is defined %}
-  <div class="mt-4 flex items-center justify-between">
-    <div>Showing page {{ page }} — total {{ total }} records</div>
-    <div class="flex gap-2">
-      {% if page > 1 %}
-        <a href="{{ url_for_page(page-1) }}" class="px-3 py-1 border rounded">Prev</a>
-      {% endif %}
-      {% if (page * per_page) < total %}
-        <a href="{{ url_for_page(page+1) }}" class="px-3 py-1 border rounded">Next</a>
-      {% endif %}
+  <!-- Filters Section -->
+  <div class="card" style="margin-bottom: var(--space-6);">
+    <div class="card__header">
+      <h2 class="text-lg font-semibold">Filter Email Logs</h2>
+    </div>
+    <div class="card__body">
+      <form method="get" action="{{ url_for('admin.email_logs') }}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); align-items: end;">
+        
+        {{ ui.form_input(
+          label='Search by recipient',
+          name='q',
+          type='text',
+          placeholder='email@example.com',
+          value=q or '',
+          help_text='Filter by recipient email address'
+        ) }}
+        
+        {{ ui.form_select(
+          label='Status',
+          name='status',
+          options=[
+            ('', 'All Statuses'),
+            ('SENT', 'Sent'),
+            ('QUEUED', 'Queued'),
+            ('FAILED', 'Failed')
+          ],
+          selected=status or '',
+          help_text='Filter by email delivery status'
+        ) }}
+        
+        {{ ui.form_input(
+          label='Start Date',
+          name='start',
+          type='date',
+          value=start or '',
+          help_text='Show emails from this date onwards'
+        ) }}
+        
+        {{ ui.form_input(
+          label='End Date',
+          name='end',
+          type='date',
+          value=end or '',
+          help_text='Show emails up to this date'
+        ) }}
+        
+        <div style="display: flex; gap: var(--space-2);">
+          {{ ui.button('Apply Filters', variant='primary', type='submit') }}
+          {% if q or status or start or end %}
+            <a href="{{ url_for('admin.email_logs') }}" class="btn btn--secondary">Clear Filters</a>
+          {% endif %}
+        </div>
+        
+      </form>
     </div>
   </div>
+
+  <!-- Email Logs Table -->
+  {% if logs %}
+    {% call ui.table_wrapper() %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Sent At</th>
+            <th>Recipient</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Event ID</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+            <tr>
+              <td>
+                <div class="text-sm">
+                  {% if log.created_at %}
+                    {{ log.created_at.strftime('%b %d, %Y') }}<br>
+                    <span class="text-muted">{{ log.created_at.strftime('%H:%M') }}</span>
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </div>
+              </td>
+              <td>
+                <div class="font-medium">{{ log.recipient }}</div>
+              </td>
+              <td>
+                <div class="text-sm">{{ log.subject or '(no subject)' }}</div>
+              </td>
+              <td>
+                {{ ui.status_badge(log.status.lower()) }}
+              </td>
+              <td>
+                {% if log.event_id %}
+                  <span class="badge badge--info">{{ log.event_id }}</span>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if log.error %}
+                  <details style="margin: 0;">
+                    <summary class="text-sm text-error cursor-pointer" style="list-style: none;">View Error</summary>
+                    <div class="text-sm text-muted" style="margin-top: var(--space-2); padding: var(--space-2); background-color: var(--color-error-50); border-radius: var(--radius);">
+                      {{ log.error }}
+                    </div>
+                  </details>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
+
+    <!-- Pagination -->
+    {% if total is defined and total > per_page %}
+      <div style="margin-top: var(--space-4); display: flex; justify-content: space-between; align-items: center;">
+        <div class="text-sm text-muted">
+          Showing {{ ((page - 1) * per_page) + 1 }} to {{ min(page * per_page, total) }} of {{ total }} emails
+        </div>
+        <div style="display: flex; gap: var(--space-2);">
+          {% if page > 1 %}
+            <a href="{{ url_for_page(page - 1) }}" class="btn btn--small btn--secondary">Previous</a>
+          {% endif %}
+          {% if (page * per_page) < total %}
+            <a href="{{ url_for_page(page + 1) }}" class="btn btn--small btn--secondary">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+  {% else %}
+    {{ ui.empty_state(
+      'No Email Logs Found',
+      'There are no email logs matching your search criteria. Try adjusting your filters or check back later.',
+      'Clear Filters',
+      url_for('admin.email_logs')
+    ) }}
   {% endif %}
+
+  <!-- Status Legend -->
+  <div style="margin-top: var(--space-8);">
+    <div class="card">
+      <div class="card__header">
+        <h3 class="text-lg font-semibold">Status Legend</h3>
+      </div>
+      <div class="card__body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-4);">
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            {{ ui.status_badge('sent') }}
+            <span class="text-sm">Successfully delivered</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            {{ ui.status_badge('queued') }}
+            <span class="text-sm">Waiting to be sent</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            {{ ui.status_badge('failed') }}
+            <span class="text-sm">Delivery failed - check error details</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </div>
 {% endblock %}

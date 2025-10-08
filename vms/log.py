@@ -39,8 +39,8 @@ def log_via_jwt(jwt_token):
     if not event:
         return render_template('log.html', error='Event not found')
     volunteer_email = payload.get('volunteer_email')
-    # find open timelog
-    open_tl = db.query(__import__('vms.models', fromlist=['TimeLog']).TimeLog).filter_by(event_id=event.id, student_email=volunteer_email, stop_ts=None).first()
+    # find open timelog (one that has been started but not stopped)
+    open_tl = db.query(__import__('vms.models', fromlist=['TimeLog']).TimeLog).filter_by(event_id=event.id, student_email=volunteer_email, stop_ts=None).filter(__import__('vms.models', fromlist=['TimeLog']).TimeLog.start_ts != None).first()
     message = None
     if request.method == 'POST':
         action = request.form.get('action')
@@ -66,13 +66,16 @@ def log_via_jwt(jwt_token):
             db.commit()
             message = f'Clocked out at {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")}, hours={open_tl.get("calculated_hours") if hasattr(open_tl, "get") else getattr(open_tl, "calculated_hours", None)}'
         else:
-            message = 'Invalid action or no open session.'
+            # Provide more specific error messages
+            if action == 'start' and open_tl:
+                message = 'You already have an open session for this event. Please stop your current session first.'
+            elif action == 'stop' and not open_tl:
+                message = 'You do not have an open session to stop. Please start a session first.'
+            else:
+                message = 'Invalid action. Please use the Start or Stop buttons on this page.'
     start_display = None
     open_flag = False
     if open_tl:
         open_flag = True
-        try:
-            start_display = datetime.fromisoformat(open_tl.start_ts).strftime('%Y-%m-%d %H:%M:%S')
-        except Exception:
-            start_display = open_tl.start_ts
+        start_display = open_tl.start_ts
     return render_template('log.html', error=None, event=event, volunteer_email=volunteer_email, open=open_flag, start_display=start_display, message=message)

@@ -1,27 +1,112 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}Submit Bulk Hours{% endblock %}
+
 {% block body %}
-<div class="bg-white p-6 rounded-lg shadow max-w-3xl mx-auto">
-  <h2 class="text-2xl font-semibold mb-4">Submit Bulk Hours (Club Leader)</h2>
-  <form method="post" action="{{ url_for('club.submit_hours') }}" class="space-y-4">
-    <div>
-      <label for="project_name" class="block text-sm font-medium text-gray-700">Project Name</label>
-      <input id="project_name" name="project_name" required placeholder="Community Clean-up" class="mt-1 block w-full border rounded px-3 py-2" />
-    </div>
-    <div>
-      <label for="date_range" class="block text-sm font-medium text-gray-700">Date Range</label>
-      <input id="date_range" name="date_range" placeholder="2025-09-01 to 2025-09-05" class="mt-1 block w-full border rounded px-3 py-2" />
-    </div>
-    <div>
-      <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-      <textarea id="description" name="description" placeholder="Brief description of the project" class="mt-1 block w-full border rounded px-3 py-2"></textarea>
-    </div>
-    <div>
-      <label for="hours_data" class="block text-sm font-medium text-gray-700">Hours Data (JSON)</label>
-      <textarea id="hours_data" name="hours_data" rows="6" placeholder='[{"email": "a@b", "hours": 2.5}]' class="mt-1 block w-full border rounded px-3 py-2"></textarea>
-    </div>
-    <div>
-      <button type="submit" class="bg-auib-accent text-white px-4 py-2 rounded">Submit</button>
-    </div>
-  </form>
+<div class="content-wrapper">
+  <div style="margin-bottom: var(--space-8);">
+    <h1 style="margin-bottom: var(--space-2);">Submit Bulk Hours</h1>
+    <p style="color: var(--color-gray-600);">
+      Submit volunteer hours for multiple club members at once. All submissions require officer approval before being recorded.
+    </p>
+  </div>
+
+  {% call ui.card(title='Bulk Hours Submission') %}
+    <form method="post" action="{{ url_for('club.submit_hours') }}" enctype="multipart/form-data" data-validate>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-6); margin-bottom: var(--space-6);">
+
+        {{ ui.form_input(
+          label='Project Name',
+          name='project_name',
+          type='text',
+          placeholder='Community Clean-up Event',
+          help_text='Name of the volunteer project or activity',
+          required=true
+        ) }}
+
+        {{ ui.form_input(
+          label='Date Range',
+          name='date_range',
+          type='text',
+          placeholder='2025-10-01 to 2025-10-05',
+          help_text='Date range when the volunteer work occurred'
+        ) }}
+
+      </div>
+
+      {{ ui.form_textarea(
+        label='Project Description',
+        name='description',
+        placeholder='Brief description of the volunteer project, goals achieved, and impact made.',
+        help_text='Optional description of the project and volunteer activities',
+        rows=3
+      ) }}
+
+      <div style="margin-top: var(--space-6); margin-bottom: var(--space-4);">
+        <h3 style="font-size: var(--text-lg); font-weight: var(--font-medium); margin-bottom: var(--space-2);">Volunteer Hours Data</h3>
+        <p style="color: var(--color-gray-600); font-size: var(--text-sm); margin-bottom: var(--space-4);">
+          Upload an Excel (.xlsx/.xls) or CSV file containing volunteer hours data. The file must include the required columns.
+        </p>
+      </div>
+
+      <div style="margin-bottom: var(--space-6);">
+        <label for="hours_file" class="form-label">Upload Hours File <span class="text-danger">*</span></label>
+        <input type="file" id="hours_file" name="hours_file" accept=".xlsx,.xls,.csv" required class="form-control">
+        <div class="form-help">Accepted formats: .xlsx, .xls, .csv</div>
+      </div>
+
+      <div style="margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border);">
+        <div class="alert alert-info">
+          <strong>Important:</strong> This submission will be sent to officers for approval. You will be notified once it has been reviewed.
+        </div>
+
+        <div style="margin-top: var(--space-4);">
+          {{ ui.button('Submit for Approval', variant='primary', type='submit') }}
+        </div>
+      </div>
+    </form>
+  {% endcall %}
+
+  <!-- Help Section -->
+  <div style="margin-top: var(--space-8);">
+    {% call ui.card(title='File Format Requirements') %}
+      <p style="color: var(--color-gray-600); margin-bottom: var(--space-4);">
+        Your Excel or CSV file must contain the following columns (case-sensitive):
+      </p>
+
+      <div style="margin-bottom: var(--space-4);">
+        <h4 style="font-size: var(--text-base); font-weight: var(--font-semibold); margin-bottom: var(--space-2);">Required Columns:</h4>
+        <ul style="color: var(--color-gray-600); font-size: var(--text-sm);">
+          <li><strong>name:</strong> Full name of the volunteer</li>
+          <li><strong>email:</strong> Email address ending with @auib.edu.iq</li>
+          <li><strong>hours:</strong> Number of hours volunteered (decimals allowed)</li>
+          <li><strong>role:</strong> Description of what the member did (e.g., "Event Coordinator", "Volunteer Helper")</li>
+        </ul>
+      </div>
+
+      <div style="margin-bottom: var(--space-4);">
+        <h4 style="font-size: var(--text-base); font-weight: var(--font-semibold); margin-bottom: var(--space-2);">Example Excel/CSV Format:</h4>
+        <div style="background: var(--color-gray-50); padding: var(--space-4); border-radius: var(--border-radius); font-family: monospace; font-size: var(--text-sm); margin-bottom: var(--space-2); overflow-x: auto;">
+          name,email,hours,role<br>
+          John Doe,john.doe@auib.edu.iq,3.5,Event Coordinator<br>
+          Jane Smith,jane.smith@auib.edu.iq,2.0,Volunteer Helper<br>
+          Bob Johnson,bob.johnson@auib.edu.iq,4.5,Setup Crew
+        </div>
+      </div>
+
+      <div class="alert alert-warning">
+        <strong>Important Notes:</strong>
+        <ul style="margin-top: var(--space-2); margin-bottom: 0;">
+          <li>All emails must end with @auib.edu.iq</li>
+          <li>Hours must be positive numbers</li>
+          <li>Name and role fields cannot be empty</li>
+          <li>The first row should contain column headers</li>
+          <li>Invalid entries will be rejected with specific error messages</li>
+        </ul>
+      </div>
+    {% endcall %}
+  </div>
+
 </div>
 {% endblock %}

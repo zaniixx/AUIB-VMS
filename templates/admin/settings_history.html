@@ -1,30 +1,86 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
 
-{% block content %}
-  <h2>Settings Change History</h2>
-  <p>Recent changes to system settings.</p>
-  <table class="table-auto w-full">
-    <thead>
-      <tr>
-        <th>When</th>
-        <th>Key</th>
-        <th>Old</th>
-        <th>New</th>
-        <th>By</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for a in audits %}
-      <tr>
-        <td>{{ a.changed_at }}</td>
-        <td>{{ a.key }}</td>
-        <td><pre class="text-xs">{{ a.old_value or '' }}</pre></td>
-        <td><pre class="text-xs">{{ a.new_value or '' }}</pre></td>
-        <td>{{ a.changed_by or 'system' }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan=5>No settings changes recorded.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{% block title %}Settings History - Admin{% endblock %}
+
+{% block body %}
+<div class="container" style="padding-top: var(--space-6); padding-bottom: var(--space-6);">
+  
+  <!-- Page Header -->
+  <div style="margin-bottom: var(--space-6);">
+    <h1 class="text-3xl" style="margin-bottom: var(--space-2);">Settings Change History</h1>
+    <p class="text-muted">Track all changes made to system settings and configurations.</p>
+  </div>
+
+  <!-- Settings History Table -->
+  {% if audits %}
+    {% call ui.table_wrapper() %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Changed At</th>
+            <th>Setting Key</th>
+            <th>Previous Value</th>
+            <th>New Value</th>
+            <th>Changed By</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for audit in audits %}
+            <tr>
+              <td>
+                <div class="text-sm">
+                  {% if audit.changed_at %}
+                    {{ audit.changed_at.strftime('%b %d, %Y') }}<br>
+                    <span class="text-muted">{{ audit.changed_at.strftime('%H:%M:%S') }}</span>
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </div>
+              </td>
+              <td>
+                <code class="text-sm">{{ audit.key }}</code>
+              </td>
+              <td>
+                {% if audit.old_value %}
+                  <pre class="text-xs" style="margin: 0; white-space: pre-wrap; word-break: break-word;">{{ audit.old_value }}</pre>
+                {% else %}
+                  <span class="text-muted">Not set</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if audit.new_value %}
+                  <pre class="text-xs" style="margin: 0; white-space: pre-wrap; word-break: break-word;">{{ audit.new_value }}</pre>
+                {% else %}
+                  <span class="text-muted">Cleared</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="text-sm">{{ audit.changed_by or 'System' }}</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
+
+    <!-- Info Note -->
+    <div class="alert alert--info" style="margin-top: var(--space-4);">
+      <div class="alert__content">
+        <div class="text-sm">
+          Showing the most recent {{ audits|length }} settings changes. Older changes are automatically archived.
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    {{ ui.empty_state(
+      'No Settings Changes',
+      'No settings have been modified yet. Changes to system settings will appear here.',
+      'Back to Settings',
+      url_for('admin.settings')
+    ) }}
+  {% endif %}
+
+</div>
 {% endblock %}

@@ -1,37 +1,109 @@
 {% extends 'base.html' %}
+{% import '_macros.html' as ui %}
+
+{% block title %}{{ action }} User - Admin{% endblock %}
+
 {% block body %}
-<div class="bg-white p-6 rounded shadow max-w-2xl mx-auto">
-  <h2 class="text-2xl font-semibold mb-4">{{ action }} User</h2>
-  <form method="post" class="space-y-4">
-    <div>
-      <label class="block text-sm">Email</label>
-      <input name="email" value="{{ user.email if user else '' }}" required placeholder="user@example.com" class="mt-1 block w-full border rounded px-3 py-2" />
+<div class="container" style="padding-top: var(--space-6); padding-bottom: var(--space-6);">
+  
+  <!-- Page Header -->
+  <div style="margin-bottom: var(--space-6);">
+    <h1 class="text-3xl" style="margin-bottom: var(--space-2);">{{ action }} User</h1>
+    <p class="text-muted">
+      {% if action == 'Create' %}
+        Add a new user account to the system.
+      {% else %}
+        Update user account information and permissions.
+      {% endif %}
+    </p>
+  </div>
+
+  <!-- User Form -->
+  <div class="card">
+    <div class="card__body">
+      <form method="post" action="" data-validate>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-4);">
+          
+          {{ ui.form_input(
+            label='Email Address',
+            name='email',
+            type='email',
+            required=true,
+            placeholder='user@example.com',
+            value=user.email if user else '',
+            help_text='User login email and primary contact'
+          ) }}
+          
+          {{ ui.form_input(
+            label='Full Name',
+            name='name',
+            type='text',
+            placeholder='John Doe',
+            value=user.name if user else '',
+            help_text='Display name for the user (optional)'
+          ) }}
+          
+          {{ ui.form_select(
+            label='User Role',
+            name='role',
+            required=true,
+            options=[
+              ('student', 'Student - Can volunteer for events'),
+              ('club_leader', 'Club Leader - Can submit bulk hours'),
+              ('officer', 'Officer - Can create events and approve hours'),
+              ('admin', 'Admin - Full system access')
+            ],
+            selected=user.role if user else (prefill_role or 'student'),
+            help_text='Determines user permissions and access level'
+          ) }}
+          
+          {{ ui.form_input(
+            label='Club ID',
+            name='club_id',
+            type='text',
+            placeholder='club_tech',
+            value=user.club_id if user else '',
+            help_text='Club identifier for club leaders (optional)'
+          ) }}
+          
+        </div>
+
+        <!-- Password Section -->
+        <div style="margin-top: var(--space-6);">
+          <h3 class="text-lg font-medium" style="margin-bottom: var(--space-4);">
+            {% if action == 'Create' %}Set Password{% else %}Change Password{% endif %}
+          </h3>
+          
+          {{ ui.form_input(
+            label='Password',
+            name='password',
+            type='password',
+            placeholder='Enter new password',
+            help_text='Leave blank to keep existing password' if user else 'Required for new users',
+            required=not user
+          ) }}
+          
+          {% if user %}
+            <div class="alert alert--warning" style="margin-top: var(--space-4);">
+              <div class="alert__content">
+                <div class="text-sm">
+                  <strong>Note:</strong> Leave password field blank to keep the current password unchanged.
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Form Actions -->
+        <div style="margin-top: var(--space-6); display: flex; gap: var(--space-3);">
+          {{ ui.button(action, variant='primary', type='submit') }}
+          <a href="{{ url_for('admin.users') }}" class="btn btn--secondary">Cancel</a>
+        </div>
+        
+      </form>
     </div>
-    <div>
-      <label class="block text-sm">Name</label>
-      <input name="name" value="{{ user.name if user else '' }}" placeholder="Full name" class="mt-1 block w-full border rounded px-3 py-2" />
-    </div>
-    <div>
-      <label class="block text-sm">Role</label>
-      <select name="role" title="User role" class="mt-1 block w-full border rounded px-3 py-2">
-        <option value="student" {% if (user and user.role=='student') or (not user and prefill_role=='student') %}selected{% endif %}>Student</option>
-        <option value="club_leader" {% if (user and user.role=='club_leader') or (not user and prefill_role=='club_leader') %}selected{% endif %}>Club Leader</option>
-        <option value="officer" {% if (user and user.role=='officer') or (not user and prefill_role=='officer') %}selected{% endif %}>Officer</option>
-        <option value="admin" {% if (user and user.role=='admin') or (not user and prefill_role=='admin') %}selected{% endif %}>Admin</option>
-      </select>
-    </div>
-    <div>
-      <label class="block text-sm">Club ID (optional)</label>
-      <input name="club_id" value="{{ user.club_id if user else '' }}" placeholder="club_..." class="mt-1 block w-full border rounded px-3 py-2" />
-    </div>
-    <div>
-      <label class="block text-sm">Password (leave blank to keep)</label>
-      <input name="password" type="password" placeholder="secret" class="mt-1 block w-full border rounded px-3 py-2" />
-    </div>
-    <div>
-      <button type="submit" class="bg-auib-accent text-white px-4 py-2 rounded">{{ action }}</button>
-      <a href="{{ url_for('admin.users') }}" class="ml-4">Cancel</a>
-    </div>
-  </form>
+  </div>
+
 </div>
 {% endblock %}
