@@ -36,7 +36,7 @@ flowchart TB
   end
 
   %% Event creation & per-volunteer link generation
-  OfficerBP -->|upload CSV / create event| OfficerCreate["Create Event\n(parse emails, normalize")]
+  OfficerBP -->|upload CSV / create event| OfficerCreate["Create Event\n(parse emails, normalize)"]
   OfficerCreate -->|persist Event| SQL
   OfficerCreate -->|for each volunteer| MakeJWT["make_logging_jwt(event_id,email)\n(gen JWT token, expiry)"]
   MakeJWT -->|build email body + link| RenderEmail["render email_link.html"]
@@ -51,6 +51,16 @@ flowchart TB
   DecodeJWT -->|create TimeLog entry| SQL["TimeLog (PENDING)"]
   LogBP -->|stop| UpdateTime["complete TimeLog, calculate hours"]
   UpdateTime --> SQL
+
+  %% Volunteer self-service: registration, login, dashboard
+  Visitor["Visitor"] -->|register| AuthBP:Register
+  AuthBP:Register["/register (POST)\ncreate User (role=student)"] -->|login_user| AuthBP:Login
+  Visitor -->|login| AuthBP:Login["/login (POST)\nauthenticate user"]
+  AuthBP:Login -->|on success| Dashboard["/volunteer/dashboard (GET)
+shows active/upcoming/past events"]
+  Dashboard -->|signup POST| AuthBP:Signup
+  AuthBP:Signup["/volunteer/signup (POST)\ncreate TimeLog (SIGNED_UP)"] --> SQL
+  Dashboard --> SQL
 
   %% Officer approval flow
   OfficerBP -->|view pending timelogs| PendingView["Officer approval UI"]
