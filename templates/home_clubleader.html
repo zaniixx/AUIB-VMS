@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="container mx-auto p-6">
+  <h1 class="text-3xl font-semibold mb-4">Club Leader Home</h1>
+  <p class="mb-4">Club leader quick actions:</p>
+  <ul class="list-disc list-inside">
+    <li><a href="{{ url_for('club.bulk_submit') }}" class="text-auib-accent">Submit Bulk Timelogs</a></li>
+    <li><a href="{{ url_for('auth.volunteer_dashboard') }}" class="text-auib-accent">Volunteer Dashboard</a></li>
+  </ul>
+</div>
+{% endblock %}

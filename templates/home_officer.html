@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="container mx-auto p-6">
+  <h1 class="text-3xl font-semibold mb-4">Officer Home</h1>
+  <p class="mb-4">Officer quick actions:</p>
+  <ul class="list-disc list-inside">
+    <li><a href="{{ url_for('officer.create_event') }}" class="text-auib-accent">Create Event</a></li>
+    <li><a href="{{ url_for('admin.email_logs') }}" class="text-auib-accent">View Email Logs</a></li>
+    <li><a href="{{ url_for('auth.volunteer_dashboard') }}" class="text-auib-accent">View Volunteer Dashboard (as volunteer)</a></li>
+  </ul>
+</div>
+{% endblock %}

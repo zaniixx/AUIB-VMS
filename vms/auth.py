@@ -40,7 +40,18 @@ def logout():
 
 @bp.route('/')
 def home_page():
-    return render_template('home.html')
+    # Render different home pages based on authentication and role
+    if current_user and getattr(current_user, 'is_authenticated', False):
+        role = getattr(current_user, 'role', '')
+        if role == 'admin':
+            return render_template('home_admin.html')
+        if role == 'officer':
+            return render_template('home_officer.html')
+        if role in ('club_leader', 'clubleader'):
+            return render_template('home_clubleader.html')
+        # default for students/volunteers
+        return render_template('home_volunteer.html')
+    return render_template('home_guest.html')
 
 
 @bp.route('/forgot', methods=('GET','POST'))

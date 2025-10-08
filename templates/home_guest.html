@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="max-w-3xl mx-auto p-8">
+  <h1 class="text-3xl font-bold mb-4">Welcome to AUIB VMS</h1>
+  <p class="mb-4">Please <a class="text-auib-accent" href="{{ url_for('auth.login') }}">sign in</a> or <a class="text-auib-accent" href="{{ url_for('auth.register') }}">register as a volunteer</a>.</p>
+  <p class="text-gray-600">If you are an officer or admin, sign in to access your dashboard.</p>
+</div>
+{% endblock %}
