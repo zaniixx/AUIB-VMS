@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: vms
+      POSTGRES_PASSWORD: vms_pass
+      POSTGRES_DB: vms
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://vms:vms_pass@db:5432/vms
+      VMS_SECRET_KEY: replace-with-secure-key
+      DB_POOL_SIZE: '10'
+      DB_MAX_OVERFLOW: '20'
+      DB_POOL_TIMEOUT: '60'
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --timeout=3 http://localhost:8000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  seed:
+    image: sls-web:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      # Run seed script once to populate demo data and then exit
+      python seed_data.py --force
+    environment:
+      DATABASE_URL: postgresql://vms:vms_pass@db:5432/vms
+    restart: 'no'
+
+volumes:
+  db-data:
+
+# Usage:
+# 1. Build and start DB+web: docker compose -f docker-compose.demo.yml up -d --build web db
+# 2. Run the seeder (will run once and exit): docker compose -f docker-compose.demo.yml up seed
+# 3. Open the site at http://localhost:8000
+# 4. To teardown: docker compose -f docker-compose.demo.yml down -v
