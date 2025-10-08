@@ -151,6 +151,20 @@ def users():
     return render_template('admin/users.html', users=users, page=page, per_page=per_page, total=total, url_for_page=url_for_page, q=q)
 
 
+@bp.route('/users/by-role')
+@login_required
+def users_by_role():
+    if not admin_required():
+        return render_template('403.html'), 403
+    db = get_db()
+    # fetch all users and group by role
+    rows = db.query(models.User).order_by(models.User.role, models.User.email).all()
+    grouped = {}
+    for u in rows:
+        grouped.setdefault(u.role or 'unknown', []).append(u)
+    return render_template('admin/users_by_role.html', grouped=grouped)
+
+
 @bp.route('/users/add', methods=('GET','POST'))
 @login_required
 def add_user():

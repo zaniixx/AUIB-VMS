@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="bg-white p-6 rounded shadow max-w-6xl mx-auto">
+  <h2 class="text-2xl font-semibold mb-4">Users grouped by role</h2>
+  {% for role, users in grouped.items() %}
+  <div class="mb-6">
+    <h3 class="text-xl font-semibold">{{ role | capitalize }} <span class="text-sm text-gray-500">({{ users|length }})</span></h3>
+    <table class="min-w-full bg-white mt-2">
+      <thead>
+        <tr>
+          <th class="px-4 py-2">Email</th>
+          <th class="px-4 py-2">Name</th>
+          <th class="px-4 py-2">Club</th>
+          <th class="px-4 py-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr class="border-t">
+          <td class="px-4 py-2">{{ u.email }}</td>
+          <td class="px-4 py-2">{{ u.name or '-' }}</td>
+          <td class="px-4 py-2">{{ u.club_id or '-' }}</td>
+          <td class="px-4 py-2">
+            <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="text-sm text-auib-accent">Edit</a>
+            <form method="post" action="{{ url_for('admin.delete_user', user_id=u.id) }}" class="inline-block ml-2" onsubmit="return confirm('Delete user {{ u.email }}?');"><button type="submit" class="text-sm text-red-600">Delete</button></form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
