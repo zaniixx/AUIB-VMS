@@ -4,22 +4,26 @@
   <h2 class="text-2xl font-semibold mb-4">Create Event</h2>
   <form method="post" enctype="multipart/form-data" action="{{ url_for('officer.create_event') }}" class="space-y-4">
     <div>
-  <label class="block text-sm font-medium text-gray-700" for="name">Event Name</label>
-  <input id="name" name="name" required placeholder="Community Cleanup" title="Event name" class="mt-1 block w-full border rounded px-3 py-2" />
+      <label class="block text-sm font-medium text-gray-700" for="name">Event Name</label>
+      <input id="name" name="name" required placeholder="Community Cleanup" title="Event name" value="{{ name or '' }}" class="mt-1 block w-full border rounded px-3 py-2" />
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700">Date</label>
-        <input name="date" placeholder="YYYY-MM-DD" class="mt-1 block w-full border rounded px-3 py-2" />
+        <label class="block text-sm font-medium text-gray-700">Start (date & time)</label>
+        <input id="start" name="start" type="datetime-local" required value="{{ start or '' }}" class="mt-1 block w-full border rounded px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">End (date & time)</label>
+        <input id="end" name="end" type="datetime-local" value="{{ end or '' }}" class="mt-1 block w-full border rounded px-3 py-2" />
       </div>
       <div>
   <label class="block text-sm font-medium text-gray-700" for="location">Location</label>
-  <input id="location" name="location" placeholder="Main Quad" title="Location" class="mt-1 block w-full border rounded px-3 py-2" />
+  <input id="location" name="location" placeholder="Main Quad" title="Location" value="{{ location or '' }}" class="mt-1 block w-full border rounded px-3 py-2" />
       </div>
     </div>
     <div>
   <label class="block text-sm font-medium text-gray-700" for="description">Description</label>
-  <textarea id="description" name="description" placeholder="Short description of the event" title="Description" class="mt-1 block w-full border rounded px-3 py-2"></textarea>
+  <textarea id="description" name="description" placeholder="Short description of the event" title="Description" class="mt-1 block w-full border rounded px-3 py-2">{{ description or '' }}</textarea>
     </div>
     <div>
   <label class="block text-sm font-medium text-gray-700">Volunteer File (CSV or Excel)</label>
@@ -31,7 +35,15 @@
     </div>
   </form>
 
-  {% if links %}
+  {% if links_info %}
+    <div class="mt-6">
+      <h3 class="font-semibold">Generated Links</h3>
+      <p class="text-sm text-gray-500 mb-2">If email sending failed, copy these lines into your email client for each volunteer:</p>
+      <textarea readonly title="Generated links with names" aria-label="Generated links with names" class="w-full h-56 border rounded p-3 bg-gray-50">{% for it in links_info %}{{ it.name }} &lt;{{ it.email }}&gt;: {{ it.link }}
+
+{% endfor %}</textarea>
+    </div>
+  {% elif links %}
     <div class="mt-6">
       <h3 class="font-semibold">Generated Links</h3>
       <p class="text-sm text-gray-500 mb-2">Copy these links to email to volunteers (they expire based on configured token expiry):</p>

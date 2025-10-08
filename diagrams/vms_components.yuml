@@ -1,0 +1,39 @@
+@startuml
+title VMS - High level component diagram
+package "Web App (Flask)" {
+  [Flask App]
+  [Blueprint: auth]
+  [Blueprint: admin]
+  [Blueprint: officer]
+  [Blueprint: club]
+  [Blueprint: log]
+}
+package "Persistence" {
+  [SQLAlchemy DB] as DB
+  [Models] as Models
+}
+package "Infrastructure" {
+  [Email Subsystem] as Email
+  [JWT]
+}
+[Flask App] --> [Blueprint: auth]
+[Flask App] --> [Blueprint: admin]
+[Flask App] --> [Blueprint: officer]
+[Flask App] --> [Blueprint: club]
+[Flask App] --> [Blueprint: log]
+[Blueprint: auth] --> Models
+[Blueprint: admin] --> Models
+[Blueprint: officer] --> Models
+[Blueprint: club] --> Models
+[Blueprint: log] --> Models
+[Blueprint: admin] --> Email
+[Blueprint: auth] --> Email
+[Blueprint: officer] --> Email
+Models --> DB
+Email ..> "SMTP Server" : sends to
+
+note right of Email
+  vms/email.py handles sending, caching, and
+  optional Flask-Mailman integration.
+end note
+@enduml
