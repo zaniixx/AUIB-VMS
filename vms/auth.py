@@ -9,6 +9,7 @@ from . import models
 from .email import send_email
 import jwt
 from datetime import datetime, timedelta
+from flask import abort
 
 bp = Blueprint('auth', __name__)
 
@@ -146,8 +147,11 @@ def volunteer_dashboard():
     def user_signed(event):
         return db.query(models.TimeLog).filter_by(student_email=user_email, event_id=event.id).first() is not None
 
-    upcoming_info = [{'event': e, 'signed': user_signed(e)} for e in upcoming]
-    active_info = [{'event': e, 'signed': user_signed(e)} for e in active]
+    def signup_count(event):
+        return db.query(models.TimeLog).filter_by(event_id=event.id).count()
+
+    upcoming_info = [{'event': e, 'signed': user_signed(e), 'count': signup_count(e)} for e in upcoming]
+    active_info = [{'event': e, 'signed': user_signed(e), 'count': signup_count(e)} for e in active]
 
     return render_template('volunteer/dashboard.html', upcoming=upcoming_info, active=active_info, past=timelogs)
 
@@ -178,6 +182,33 @@ def signup_event():
     db.add(tl)
     db.commit()
     flash('Signed up for event — good luck!')
+    return redirect(url_for('auth.volunteer_dashboard'))
+
+
+@bp.route('/volunteer/cancel', methods=('POST',))
+@login_required
+def cancel_signup():
+    """Cancel a volunteer's signup for an event (delete TimeLog entry created by signup)."""
+    event_id = request.form.get('event_id')
+    if not event_id:
+        flash('No event specified')
+        return redirect(url_for('auth.volunteer_dashboard'))
+    db = get_db()
+    user_email = getattr(current_user, 'email', None)
+    if not user_email:
+        flash('Your account has no email; cannot cancel signup')
+        return redirect(url_for('auth.volunteer_dashboard'))
+    existing = db.query(models.TimeLog).filter_by(student_email=user_email, event_id=event_id).first()
+    if not existing:
+        flash('You are not signed up for that event')
+        return redirect(url_for('auth.volunteer_dashboard'))
+    # Only delete if the status is SIGNED_UP (we won't delete approved/attended logs)
+    if existing.status != 'SIGNED_UP':
+        flash('Cannot cancel signup for an event that is already processed')
+        return redirect(url_for('auth.volunteer_dashboard'))
+    db.delete(existing)
+    db.commit()
+    flash('Your signup has been cancelled')
     return redirect(url_for('auth.volunteer_dashboard'))
 
 

@@ -10,12 +10,16 @@
       {% for item in active %}
         <li class="p-4 bg-white rounded shadow flex justify-between items-center">
           <div>
-            <div class="font-semibold">{{ item.event.name }}</div>
-            <div class="text-sm text-gray-600">{{ item.event.display_date }} — {{ item.event.location }}</div>
+            <div class="font-semibold">{{ item.event.name }} <span class="text-sm text-gray-500">({{ item.event.display_date }})</span></div>
+            <div class="text-sm text-gray-600">{{ item.event.location }}</div>
+            <div class="text-sm text-gray-500">Signups: {{ item.count or 0 }}</div>
           </div>
           <div>
             {% if item.signed %}
-              <span class="px-3 py-1 bg-green-100 text-green-800 rounded">Signed</span>
+              <form method="post" action="{{ url_for('auth.cancel_signup') }}">
+                <input type="hidden" name="event_id" value="{{ item.event.id }}" />
+                <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded">Cancel</button>
+              </form>
             {% else %}
               <form method="post" action="{{ url_for('auth.signup_event') }}">
                 <input type="hidden" name="event_id" value="{{ item.event.id }}" />
@@ -38,12 +42,16 @@
       {% for item in upcoming %}
         <li class="p-4 bg-white rounded shadow flex justify-between items-center">
           <div>
-            <div class="font-semibold">{{ item.event.name }}</div>
-            <div class="text-sm text-gray-600">{{ item.event.display_date }} — {{ item.event.location }}</div>
+            <div class="font-semibold">{{ item.event.name }} <span class="text-sm text-gray-500">({{ item.event.display_date }})</span></div>
+            <div class="text-sm text-gray-600">{{ item.event.location }}</div>
+            <div class="text-sm text-gray-500">Signups: {{ item.count or 0 }}</div>
           </div>
           <div>
             {% if item.signed %}
-              <span class="px-3 py-1 bg-green-100 text-green-800 rounded">Signed</span>
+              <form method="post" action="{{ url_for('auth.cancel_signup') }}">
+                <input type="hidden" name="event_id" value="{{ item.event.id }}" />
+                <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded">Cancel</button>
+              </form>
             {% else %}
               <form method="post" action="{{ url_for('auth.signup_event') }}">
                 <input type="hidden" name="event_id" value="{{ item.event.id }}" />
