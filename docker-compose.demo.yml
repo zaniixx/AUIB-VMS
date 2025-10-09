@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15
@@ -12,12 +10,13 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U vms -d vms"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
 
-  web:
+  seeder:
     build: .
     depends_on:
       db:
@@ -25,6 +24,21 @@ services:
     environment:
       DATABASE_URL: postgresql://vms:vms_pass@db:5432/vms
       VMS_SECRET_KEY: replace-with-secure-key
+    command: sh -c "sleep 5 && python seed_data.py"
+    restart: "no"
+
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      seeder:
+        condition: service_completed_successfully
+    environment:
+      # Use SQLAlchemy-compatible scheme 'postgresql://' so the dialect driver is resolved
+      DATABASE_URL: postgresql://vms:vms_pass@db:5432/vms
+      VMS_SECRET_KEY: replace-with-secure-key
+      # Pool sizing tuned for moderate concurrency. pool_size is per-process.
       DB_POOL_SIZE: '10'
       DB_MAX_OVERFLOW: '20'
       DB_POOL_TIMEOUT: '60'
@@ -37,24 +51,5 @@ services:
       timeout: 5s
       retries: 5
 
-  seed:
-    image: sls-web:latest
-    depends_on:
-      db:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
-    command: |
-      # Run seed script once to populate demo data and then exit
-      python seed_data.py --force
-    environment:
-      DATABASE_URL: postgresql://vms:vms_pass@db:5432/vms
-    restart: 'no'
-
 volumes:
   db-data:
-
-# Usage:
-# 1. Build and start DB+web: docker compose -f docker-compose.demo.yml up -d --build web db
-# 2. Run the seeder (will run once and exit): docker compose -f docker-compose.demo.yml up seed
-# 3. Open the site at http://localhost:8000
-# 4. To teardown: docker compose -f docker-compose.demo.yml down -v

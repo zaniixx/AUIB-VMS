@@ -6,6 +6,9 @@ Run with: python seed_data.py
 import sys
 import os
 from datetime import datetime, timedelta
+import time
+import subprocess
+from sqlalchemy import delete
 from random import choice, randint, sample
 from werkzeug.security import generate_password_hash
 
@@ -22,13 +25,13 @@ def clear_database():
     print("🗑️  Clearing existing data...")
     db = get_db()
     
-    # Delete in order to respect foreign key constraints
-    db.query(EmailLog).delete()
-    db.query(TimeLog).delete()
-    db.query(Event).delete()
-    db.query(User).delete()
-    db.query(Setting).delete()
-    
+    # Delete in order to respect foreign key constraints (SQLAlchemy 2.0 style)
+    db.execute(delete(EmailLog))
+    db.execute(delete(TimeLog))
+    db.execute(delete(Event))
+    db.execute(delete(User))
+    db.execute(delete(Setting))
+
     db.commit()
     print("✅ Database cleared")
 
@@ -313,12 +316,13 @@ def seed_timelogs(users, events):
             status = choice(['APPROVED', 'APPROVED', 'APPROVED', 'PENDING', 'REJECTED'])  # Bias toward approved
             hours = round(randint(2, 5) + (randint(0, 9) / 10), 1)  # 2.0 - 5.9 hours
             
+            # Use real datetimes for start/stop (Postgres TIMESTAMP compatible)
             timelog = TimeLog(
                 id=gen_id('t_'),
                 student_email=student.email,
                 event_id=event.id,
-                start_ts=event.start_ts.isoformat() if event.start_ts else None,
-                stop_ts=event.end_ts.isoformat() if event.end_ts else None,
+                start_ts=event.start_ts if event.start_ts else None,
+                stop_ts=event.end_ts if event.end_ts else None,
                 calculated_hours=hours if status == 'APPROVED' else None,
                 status=status,
                 marker=None
@@ -335,7 +339,7 @@ def seed_timelogs(users, events):
                 id=gen_id('t_'),
                 student_email=student.email,
                 event_id=event.id,
-                start_ts=event.start_ts.isoformat() if event.start_ts else None,
+                start_ts=event.start_ts if event.start_ts else None,
                 stop_ts=None,  # Not completed yet
                 calculated_hours=None,
                 status='PENDING',
@@ -478,15 +482,35 @@ def main():
     app = create_app()
     
     with app.app_context():
-        # Ask for confirmation (skip if --force flag is provided)
-        if len(sys.argv) > 1 and sys.argv[1] == '--force':
-            print("\n⚠️  Force mode: Skipping confirmation")
+        # Wait for DB to be available (useful in containerized environments)
+        max_attempts = 12
+        attempt = 0
+        while attempt < max_attempts:
+            try:
+                db = get_db()
+                # lightweight check
+                db.execute("SELECT 1")
+                break
+            except Exception as e:
+                attempt += 1
+                wait = 2 ** min(attempt, 6)
+                print(f"Waiting for DB ({attempt}/{max_attempts})... retry in {wait}s")
+                time.sleep(wait)
         else:
-            response = input("\n⚠️  This will DELETE all existing data. Continue? (yes/no): ")
-            if response.lower() not in ['yes', 'y']:
-                print("❌ Seeding cancelled")
-                return
-        
+            print("❌ Timed out waiting for the database to become available")
+            return
+
+        # Run DB migrations if alembic is present
+        if os.path.exists('alembic.ini'):
+            try:
+                print("⚙️  Found alembic.ini — running migrations: alembic upgrade head")
+                subprocess.run(['alembic', 'upgrade', 'head'], check=True)
+            except Exception as e:
+                print(f"⚠️  Running alembic failed: {e}")
+                print("Continuing to seed (ensure schema exists)")
+        # Non-interactive seeding: proceed without prompting
+        print("\n⚠️  Non-interactive mode: proceeding to clear and seed the database")
+
         # Clear existing data
         clear_database()
         

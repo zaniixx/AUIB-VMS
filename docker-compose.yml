@@ -5,6 +5,8 @@ services:
       POSTGRES_USER: vms
       POSTGRES_PASSWORD: vms_pass
       POSTGRES_DB: vms
+    ports:
+      - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
