@@ -14,7 +14,7 @@ time logging, and reporting.
 Technology Stack
 ----------------
 - **Backend**: Python 3.11+, Flask web framework
-- **Database**: PostgreSQL 15 with SQLAlchemy 2.0 ORM
+- **Database**: PostgreSQL 15
 - **Authentication**: Flask-Login with JWT tokens for volunteer links
 - **Email**: Flask-Mailman for SMTP integration
 - **Data Processing**: Pandas for CSV/Excel file handling
