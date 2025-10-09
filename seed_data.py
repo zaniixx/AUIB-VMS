@@ -8,7 +8,7 @@ import os
 from datetime import datetime, timedelta
 import time
 import subprocess
-from sqlalchemy import delete
+from sqlalchemy import delete, text
 from random import choice, randint, sample
 from werkzeug.security import generate_password_hash
 
@@ -489,7 +489,7 @@ def main():
             try:
                 db = get_db()
                 # lightweight check
-                db.execute("SELECT 1")
+                db.execute(text("SELECT 1"))
                 break
             except Exception as e:
                 attempt += 1
