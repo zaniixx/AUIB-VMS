@@ -26,7 +26,7 @@ def seed():
     app = create_app()
     with app.app_context():
         # Use the comprehensive seeding from seed_data.py instead of the basic one
-        from seed_data import main as seed_main
+        from demo.seed_data import main as seed_main
         seed_main()
 
 
@@ -40,7 +40,7 @@ def setup():
         print('Database initialized (create_all performed at app startup).')
         
         # Use the comprehensive seeding from seed_data.py
-        from seed_data import main as seed_main
+        from demo.seed_data import main as seed_main
         seed_main()
 
 
