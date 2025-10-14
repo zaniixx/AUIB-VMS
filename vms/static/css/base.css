@@ -311,3 +311,12 @@ legend {
     display: none !important;
   }
 }
+
+/* ========== Bulk Operations Styles ========== */
+.bulk-actions-hidden {
+  display: none;
+}
+
+.assign-select-hidden {
+  display: none;
+}

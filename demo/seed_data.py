@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from vms import create_app
 from vms.db import get_db
-from vms.models import User, Event, TimeLog, EmailLog, Setting, gen_id
+from vms.models import User, Event, TimeLog, EmailLog, Setting, Ticket, TicketResponse, TicketAttachment, gen_id
 
 
 def clear_database():
@@ -26,6 +26,9 @@ def clear_database():
     db = get_db()
     
     # Delete in order to respect foreign key constraints (SQLAlchemy 2.0 style)
+    db.execute(delete(TicketAttachment))
+    db.execute(delete(TicketResponse))
+    db.execute(delete(Ticket))
     db.execute(delete(EmailLog))
     db.execute(delete(TimeLog))
     db.execute(delete(Event))
@@ -449,6 +452,137 @@ def seed_email_logs(users, events):
     return email_logs
 
 
+def seed_tickets(users):
+    """Create sample support tickets"""
+    print("\n🎫 Creating support tickets...")
+    db = get_db()
+
+    # Get users by role
+    students = [u for u in users if u.role == 'student']
+    officers = [u for u in users if u.role == 'officer']
+    club_leaders = [u for u in users if u.role == 'club_leader']
+
+    if not students or not officers:
+        print("❌ No students or officers found, skipping tickets")
+        return []
+
+    now = datetime.now()
+    tickets = []
+    responses = []
+
+    # Sample ticket data
+    ticket_data = [
+        {
+            'title': 'Bug: Hours not showing in dashboard',
+            'category': 'bug',
+            'priority': 'high',
+            'description': 'I logged hours for the Campus Cleanup event but they are not appearing in my volunteer dashboard. The event shows as completed but no hours were recorded.',
+            'submitter': students[0],
+            'status': 'resolved',
+            'assigned_officer': officers[0],
+            'responses': [
+                {
+                    'content': 'Thank you for reporting this issue. I\'m looking into your timelog records now.',
+                    'author': officers[0],
+                    'is_internal': False
+                },
+                {
+                    'content': 'Found the issue - there was a problem with the hour calculation. I\'ve manually corrected your hours. Please check your dashboard now.',
+                    'author': officers[0],
+                    'is_internal': False
+                }
+            ]
+        },
+        {
+            'title': 'Feature Request: Mobile app for VMS',
+            'category': 'feature',
+            'priority': 'normal',
+            'description': 'It would be great to have a mobile app version of the VMS system. This would make it much easier to sign up for events and log hours on the go.',
+            'submitter': students[1],
+            'status': 'open',
+            'assigned_officer': None,
+            'responses': []
+        },
+        {
+            'title': 'Suggestion: Add event categories',
+            'category': 'suggestion',
+            'priority': 'low',
+            'description': 'Could we add categories to events (like "Environmental", "Community Service", "Education", etc.)? This would help volunteers find events that match their interests.',
+            'submitter': club_leaders[0],
+            'status': 'in_progress',
+            'assigned_officer': officers[0],
+            'responses': [
+                {
+                    'content': 'This is a great suggestion! We\'re currently planning to implement event categories in the next update.',
+                    'author': officers[0],
+                    'is_internal': False
+                }
+            ]
+        },
+        {
+            'title': 'Problem: Cannot submit bulk hours',
+            'category': 'problem',
+            'priority': 'normal',
+            'description': 'As a club leader, I\'m trying to submit bulk hours for my club members but the form keeps showing an error. The CSV file is properly formatted.',
+            'submitter': club_leaders[0],
+            'status': 'open',
+            'assigned_officer': None,
+            'responses': []
+        },
+        {
+            'title': 'Bug: Email notifications not working',
+            'category': 'bug',
+            'priority': 'high',
+            'description': 'I\'m not receiving email notifications when I sign up for events or when my hours are approved. Other emails seem to work fine.',
+            'submitter': students[2],
+            'status': 'open',
+            'assigned_officer': officers[0],
+            'responses': [
+                {
+                    'content': 'We\'re aware of some email delivery issues. Our IT team is investigating. In the meantime, please check your spam folder.',
+                    'author': officers[0],
+                    'is_internal': True
+                }
+            ]
+        }
+    ]
+
+    for data in ticket_data:
+        ticket = Ticket(
+            id=gen_id('tk_'),
+            title=data['title'],
+            description=data['description'],
+            category=data['category'],
+            priority=data['priority'],
+            status=data['status'],
+            submitter_id=data['submitter'].id,
+            assigned_officer_id=data['assigned_officer'].id if data['assigned_officer'] else None,
+            created_at=now - timedelta(days=randint(1, 30)),
+            updated_at=now - timedelta(days=randint(0, 7))
+        )
+        tickets.append(ticket)
+
+        # Create responses for this ticket
+        for response_data in data['responses']:
+            response = TicketResponse(
+                id=gen_id('tr_'),
+                ticket_id=ticket.id,
+                responder_id=response_data['author'].id,
+                response_text=response_data['content'],
+                is_internal=response_data['is_internal'],
+                created_at=ticket.created_at + timedelta(hours=randint(1, 24))
+            )
+            responses.append(response)
+
+    db.add_all(tickets)
+    db.add_all(responses)
+    db.commit()
+
+    print(f"✅ Created {len(tickets)} tickets with {len(responses)} responses")
+
+    return tickets, responses
+
+
 def seed_settings():
     """Create sample settings"""
     print("\n⚙️  Creating settings...")
@@ -519,6 +653,7 @@ def main():
         events = seed_events(users)
         timelogs = seed_timelogs(users, events)
         email_logs = seed_email_logs(users, events)
+        tickets, ticket_responses = seed_tickets(users)
         settings = seed_settings()
         
         print("\n" + "="*60)

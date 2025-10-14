@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Float, Text, ForeignKey
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 import uuid
 
@@ -246,6 +246,77 @@ class SettingAudit(Base):
     changed_at = Column(DateTime, default=datetime.utcnow)
 
 
+class Ticket(Base):
+    __tablename__ = 'tickets'
+    id = Column(String, primary_key=True)
+    submitter_id = Column(String, ForeignKey('users.id'), nullable=False)
+    assigned_officer_id = Column(String, ForeignKey('users.id'), nullable=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    category = Column(String, nullable=False)  # suggestion, problem, bug, feature_request, general
+    priority = Column(String, default='normal')  # low, normal, high, urgent
+    status = Column(String, default='open')  # open, in_progress, resolved, closed
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def status_display(self):
+        return {
+            'open': 'Open',
+            'in_progress': 'In Progress',
+            'resolved': 'Resolved',
+            'closed': 'Closed'
+        }.get(self.status, self.status)
+
+    @property
+    def priority_display(self):
+        return {
+            'low': 'Low',
+            'normal': 'Normal',
+            'high': 'High',
+            'urgent': 'Urgent'
+        }.get(self.priority, self.priority)
+
+    @property
+    def category_display(self):
+        return {
+            'suggestion': 'Suggestion',
+            'problem': 'Problem',
+            'bug': 'Bug Report',
+            'feature_request': 'Feature Request',
+            'general': 'General Inquiry'
+        }.get(self.category, self.category)
+
+
+class TicketResponse(Base):
+    __tablename__ = 'ticket_responses'
+    id = Column(String, primary_key=True)
+    ticket_id = Column(String, ForeignKey('tickets.id'), nullable=False)
+    responder_id = Column(String, ForeignKey('users.id'), nullable=False)
+    response_text = Column(Text, nullable=False)
+    is_internal = Column(Integer, default=0)  # 0=public, 1=internal note
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class TicketAttachment(Base):
+    __tablename__ = 'ticket_attachments'
+    id = Column(String, primary_key=True)
+    ticket_id = Column(String, ForeignKey('tickets.id'), nullable=False)
+    response_id = Column(String, ForeignKey('ticket_responses.id'), nullable=True)  # NULL for ticket attachments
+    uploader_id = Column(String, ForeignKey('users.id'), nullable=False)
+    filename = Column(String, nullable=False)
+    original_filename = Column(String, nullable=False)
+    file_size = Column(Integer, nullable=False)
+    mime_type = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)  # Relative path from upload directory
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    ticket = relationship('Ticket', backref='attachments')
+    response = relationship('TicketResponse', backref='attachments')
+    uploader = relationship('User')
+
+
 # Utility functions for ID generation
 def gen_id(prefix=''):
     """Generate a unique ID with optional prefix"""
@@ -260,4 +331,9 @@ def next_timelog_id():
 def next_bulk_id():
     """Generate a unique bulk submission ID"""
     return gen_id('b_')
+
+
+def next_ticket_id():
+    """Generate a unique ticket ID"""
+    return gen_id('tk_')
 

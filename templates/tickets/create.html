@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Support Ticket{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ticket-form.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="ticket-form-container">
+  <div class="form-header">
+    <div class="header-icon">
+      <i class="fas fa-ticket-alt" aria-hidden="true"></i>
+    </div>
+    <h1 class="form-title">Submit Support Ticket</h1>
+    <p class="form-description">
+      Get help from our support team. Please provide detailed information to help us assist you better.
+    </p>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="alert-container" role="alert" aria-live="polite">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'info' }}">
+            <div class="alert-icon">
+              <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }}" aria-hidden="true"></i>
+            </div>
+            <div class="alert-content">
+              <p class="alert-message">{{ message }}</p>
+            </div>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()" aria-label="Close alert">
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Progress Indicator -->
+  <div class="progress-container" id="progressContainer" aria-hidden="true">
+    <div class="progress-steps">
+      <div class="progress-step active" data-step="1">
+        <div class="step-number">1</div>
+        <span class="step-label">Basic Info</span>
+      </div>
+      <div class="progress-step" data-step="2">
+        <div class="step-number">2</div>
+        <span class="step-label">Details</span>
+      </div>
+      <div class="progress-step" data-step="3">
+        <div class="step-number">3</div>
+        <span class="step-label">Review</span>
+      </div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width: 33%"></div>
+    </div>
+  </div>
+
+  <!-- Main Form -->
+  <form method="POST" action="{{ url_for('tickets.create') }}" enctype="multipart/form-data"
+        id="ticketForm" novalidate aria-labelledby="form-title">
+
+    <!-- Step 1: Basic Information -->
+    <fieldset class="form-section" id="basicInfoSection">
+      <legend class="section-legend">
+        <span class="section-icon">
+          <i class="fas fa-info-circle" aria-hidden="true"></i>
+        </span>
+        Basic Information
+      </legend>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="title" class="form-label required">
+            <i class="fas fa-heading" aria-hidden="true"></i>
+            Ticket Title
+          </label>
+          <input type="text" id="title" name="title" class="form-input"
+                 placeholder="Brief summary of your issue"
+                 required minlength="5" maxlength="200"
+                 autocomplete="off"
+                 aria-describedby="title-help title-counter">
+          <div class="form-help" id="title-help">Be specific and concise (5-200 characters)</div>
+          <div class="character-counter" id="titleCounter" aria-live="polite">0/200</div>
+          <div class="form-error" id="titleError" role="alert"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="category" class="form-label required">
+            <i class="fas fa-tags" aria-hidden="true"></i>
+            Category
+          </label>
+          <select id="category" name="category" class="form-select" required
+                  aria-describedby="category-help">
+            <option value="">Choose a category...</option>
+            <option value="general">General Inquiry</option>
+            <option value="suggestion">Suggestion</option>
+            <option value="problem">Problem</option>
+            <option value="bug">Bug Report</option>
+            <option value="feature_request">Feature Request</option>
+          </select>
+          <div class="form-help" id="category-help">Select the category that best describes your issue</div>
+          <div class="form-error" id="categoryError" role="alert"></div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="priority" class="form-label required">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            Priority Level
+          </label>
+          <select id="priority" name="priority" class="form-select" required
+                  aria-describedby="priority-help">
+            <option value="">Choose priority...</option>
+            <option value="low">Low - Nice to have</option>
+            <option value="normal" selected>Normal - Standard priority</option>
+            <option value="high">High - Important issue</option>
+            <option value="urgent">Urgent - Critical issue</option>
+          </select>
+          <div class="form-help" id="priority-help">How urgent is this issue?</div>
+          <div class="priority-indicator" id="priorityIndicator" role="status" aria-live="polite"></div>
+          <div class="form-error" id="priorityError" role="alert"></div>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Step 2: Detailed Description & Attachments -->
+    <fieldset class="form-section" id="detailsSection">
+      <legend class="section-legend">
+        <span class="section-icon">
+          <i class="fas fa-edit" aria-hidden="true"></i>
+        </span>
+        Detailed Description
+      </legend>
+
+      <div class="form-group">
+        <label for="description" class="form-label required">
+          <i class="fas fa-align-left" aria-hidden="true"></i>
+          Please describe your issue
+        </label>
+        <textarea id="description" name="description" class="form-textarea" rows="6"
+                  placeholder="Please provide detailed information about your issue or request. Include:
+
+• What were you trying to do?
+• What happened instead?
+• Steps to reproduce the issue
+• Any error messages you encountered
+• Your environment (browser, device, etc.)
+• Any relevant context or background information"
+                  required minlength="10" maxlength="2000"
+                  aria-describedby="description-help description-counter"></textarea>
+        <div class="form-help" id="description-help">
+          <i class="fas fa-lightbulb" aria-hidden="true"></i>
+          The more detail you provide, the faster we can help you!
+        </div>
+        <div class="character-counter" id="descriptionCounter" aria-live="polite">0/2000</div>
+        <div class="form-error" id="descriptionError" role="alert"></div>
+      </div>
+
+      <!-- File Attachments -->
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fas fa-paperclip" aria-hidden="true"></i>
+          Attachments <span class="optional">(Optional)</span>
+        </label>
+
+        <div class="file-upload-area" id="fileUploadArea" role="button" tabindex="0"
+             aria-label="Click to select files or drag and drop here">
+          <div class="upload-content">
+            <div class="upload-icon">
+              <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
+            </div>
+            <div class="upload-text">
+              <h4>Drag & drop files here</h4>
+              <p>or <button type="button" class="upload-link" onclick="document.getElementById('attachments').click()">browse to choose files</button></p>
+            </div>
+            <input type="file" id="attachments" name="attachments" multiple
+                   accept=".txt,.pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.xls,.xlsx,.zip,.rar"
+                   aria-describedby="file-help" hidden>
+          </div>
+        </div>
+
+        <div class="form-help" id="file-help">
+          <i class="fas fa-info-circle" aria-hidden="true"></i>
+          Supported formats: Images, Documents, Spreadsheets, Archives (Max 10MB per file)
+        </div>
+
+        <div class="file-list" id="fileList" role="list" aria-label="Selected files"></div>
+      </div>
+    </fieldset>
+
+    <!-- Step 3: Review & Submit -->
+    <fieldset class="form-section" id="reviewSection">
+      <legend class="section-legend">
+        <span class="section-icon">
+          <i class="fas fa-check-circle" aria-hidden="true"></i>
+        </span>
+        Review & Submit
+      </legend>
+
+      <div class="review-notice">
+        <div class="notice-icon">
+          <i class="fas fa-lightbulb" aria-hidden="true"></i>
+        </div>
+        <div class="notice-content">
+          <strong>Before submitting:</strong> Please double-check that all information is accurate and complete.
+          You can edit your ticket after submission, but providing complete information now will help us resolve your issue faster.
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a href="{{ url_for('tickets.index') }}" class="btn btn-secondary">
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          Back to Tickets
+        </a>
+        <div class="action-buttons">
+          <button type="button" class="btn btn-outline-primary" id="previewBtn">
+            <i class="fas fa-eye" aria-hidden="true"></i>
+            Preview Ticket
+          </button>
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+            Submit Ticket
+          </button>
+        </div>
+      </div>
+    </fieldset>
+  </form>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal-overlay" id="previewModal" role="dialog" aria-modal="true" aria-labelledby="previewTitle" hidden>
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2 class="modal-title" id="previewTitle">
+        <i class="fas fa-eye" aria-hidden="true"></i>
+        Ticket Preview
+      </h2>
+      <button type="button" class="modal-close" id="previewClose" aria-label="Close preview">
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="modal-body" id="previewContent">
+      <!-- Preview content will be populated by JavaScript -->
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" id="editBtn">
+        <i class="fas fa-edit" aria-hidden="true"></i>
+        Make Changes
+      </button>
+      <button type="button" class="btn btn-primary" id="confirmSubmitBtn">
+        <i class="fas fa-paper-plane" aria-hidden="true"></i>
+        Submit Ticket
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/ticket-utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modules/ticket-validation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modules/file-upload.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modules/ticket-ui.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ticket-form.js') }}"></script>
+{% endblock %}

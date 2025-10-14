@@ -58,12 +58,14 @@ def create_app():
     from .club import bp as club_bp
     from .log import bp as log_bp
     from .admin import bp as admin_bp
+    from .tickets import bp as tickets_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(officer_bp, url_prefix='/officer')
     app.register_blueprint(club_bp, url_prefix='/club')
     app.register_blueprint(log_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(tickets_bp)
 
     # Add custom Jinja2 filters
     @app.template_filter('format_datetime')

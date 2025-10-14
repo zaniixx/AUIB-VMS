@@ -107,6 +107,17 @@
           </p>
         </div>
       {% endcall %}
+
+      <!-- Support Tickets -->
+      {% call ui.card(title='Support & Feedback', compact=true) %}
+        <p style="color: var(--color-gray-600); font-size: var(--text-sm); margin-bottom: var(--space-4);">
+          Have a suggestion, found a bug, or need help? Submit a support ticket.
+        </p>
+        <a href="{{ url_for('tickets.index') }}" class="btn btn--outline btn--full">
+          <i class="fas fa-ticket-alt" style="width: 1.25rem; height: 1.25rem;"></i>
+          View My Tickets
+        </a>
+      {% endcall %}
     </div>
   </div>
 </div>

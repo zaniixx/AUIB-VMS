@@ -134,6 +134,17 @@
       </a>
     {% endcall %}
 
+    <!-- Support Tickets Card -->
+    {% call ui.card(title='Support Tickets', compact=true) %}
+      <p style="color: var(--color-gray-600); font-size: var(--text-sm); margin-bottom: var(--space-4);">
+        Manage user support tickets, suggestions, and feedback.
+      </p>
+      <a href="{{ url_for('tickets.index') }}" class="btn btn--outline btn--full">
+        <i class="fas fa-ticket-alt" style="width: 1.25rem; height: 1.25rem;"></i>
+        View Tickets
+      </a>
+    {% endcall %}
+
     <!-- Volunteer View Card -->
     {% call ui.card(title='Volunteer View', compact=true) %}
       <p style="color: var(--color-gray-600); font-size: var(--text-sm); margin-bottom: var(--space-4);">
