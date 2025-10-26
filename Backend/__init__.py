@@ -1,6 +1,8 @@
-from flask import Flask, redirect, url_for, render_template
+from flask import Flask, redirect, url_for, render_template, send_from_directory
 import os
 from flask_login import LoginManager
+from jinja2 import ChoiceLoader, FileSystemLoader
+from werkzeug.exceptions import NotFound
 
 from .models import get_user, seed_sample_users
 from .db import init_db
@@ -9,8 +11,49 @@ login_manager = LoginManager()
 
 
 def create_app():
-    template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
-    app = Flask(__name__, template_folder=template_dir)
+    backend_dir = os.path.abspath(os.path.dirname(__file__))
+    project_root = os.path.abspath(os.path.join(backend_dir, '..'))
+    frontend_dir = os.path.join(project_root, 'Frontend')
+    frontend_templates = os.path.join(frontend_dir, 'templates')
+    frontend_static = os.path.join(frontend_dir, 'static')
+    legacy_templates = os.path.join(project_root, 'templates')
+    backend_templates = os.path.join(backend_dir, 'templates')
+
+    template_search_paths = []
+    for candidate in (frontend_templates, legacy_templates, backend_templates):
+        if candidate and os.path.isdir(candidate):
+            template_search_paths.append(candidate)
+
+    primary_template_dir = template_search_paths[0] if template_search_paths else frontend_templates
+    static_dir = frontend_static if os.path.isdir(frontend_static) else os.path.join(backend_dir, 'static')
+
+    app = Flask(
+        __name__,
+        template_folder=primary_template_dir,
+        static_folder=static_dir if os.path.isdir(static_dir) else None,
+        static_url_path='/static'
+    )
+
+    if template_search_paths:
+        loaders = [FileSystemLoader(path) for path in template_search_paths]
+        if app.jinja_loader:
+            loaders.append(app.jinja_loader)
+        app.jinja_loader = ChoiceLoader(loaders)
+
+    legacy_static_dir = os.path.join(backend_dir, 'static')
+    if app.static_folder and legacy_static_dir and os.path.isdir(legacy_static_dir):
+        original_send_static = app.send_static_file
+
+        def send_static_with_fallback(filename):
+            try:
+                return original_send_static(filename)
+            except NotFound:
+                fallback_path = os.path.join(legacy_static_dir, filename)
+                if os.path.isfile(fallback_path):
+                    return send_from_directory(legacy_static_dir, filename)
+                raise
+
+        app.send_static_file = send_static_with_fallback
     app.config['SECRET_KEY'] = os.environ.get('VMS_SECRET_KEY', 'dev-secret-key')
     app.config['JWT_SECRET'] = os.environ.get('VMS_JWT_SECRET', 'jwt-secret')
     app.config['JWT_ALGORITHM'] = os.environ.get('VMS_JWT_ALGORITHM', 'HS256')

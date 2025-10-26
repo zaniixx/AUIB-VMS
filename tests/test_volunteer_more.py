@@ -1,9 +1,9 @@
 import os
 import tempfile
 import pytest
-from vms import create_app
-from vms.db import get_db
-from vms.models import gen_id
+from Backend import create_app
+from Backend.db import get_db
+from Backend.models import gen_id
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def test_cancel_signup_and_edge_cases(app, client):
     db = get_db()
     # create event
     eid = gen_id('e_')
-    from vms.models import Event
+    from Backend.models import Event
     ev = Event(id=eid, name='Cancelable Event', location='Room X')
     db.add(ev)
     db.commit()

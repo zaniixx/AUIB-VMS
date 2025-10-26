@@ -15,9 +15,9 @@ from werkzeug.security import generate_password_hash
 # Add the project directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from vms import create_app
-from vms.db import get_db
-from vms.models import User, Event, TimeLog, EmailLog, Setting, Ticket, TicketResponse, TicketAttachment, gen_id
+from Backend import create_app
+from Backend.db import get_db
+from Backend.models import User, Event, TimeLog, EmailLog, Setting, Ticket, TicketResponse, TicketAttachment, gen_id
 
 
 def clear_database():

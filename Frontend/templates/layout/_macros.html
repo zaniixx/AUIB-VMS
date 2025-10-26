@@ -1,0 +1,278 @@
+{# ========================================
+   AUIB VMS Macro Library
+   Reusable, accessible UI components
+   ======================================== #}
+
+{# ========== Flash Messages ========== #}
+{% macro flash_messages() %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        {% set alert_type = category if category in ['success', 'error', 'warning', 'info'] else 'info' %}
+        <div class="alert alert--{{ alert_type }}" role="alert" data-dismissible data-auto-hide="5000">
+          <div class="alert__content">
+            <p class="alert__message">{{ message }}</p>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+{% endmacro %}
+
+{# ========== Card Component ========== #}
+{% macro card(title='', subtitle='', compact=false, flush=false) %}
+  <div class="card {% if compact %}card--compact{% endif %} {% if flush %}card--flush{% endif %}">
+    {% if title %}
+      <div class="card__header">
+        <h3 class="card__title">{{ title }}</h3>
+        {% if subtitle %}
+          <p class="card__subtitle">{{ subtitle }}</p>
+        {% endif %}
+      </div>
+    {% endif %}
+    <div class="card__body">
+      {{ caller() }}
+    </div>
+  </div>
+{% endmacro %}
+
+{# ========== Card with Footer ========== #}
+{% macro card_with_footer(title='', subtitle='') %}
+  <div class="card">
+    {% if title %}
+      <div class="card__header">
+        <h3 class="card__title">{{ title }}</h3>
+        {% if subtitle %}
+          <p class="card__subtitle">{{ subtitle }}</p>
+        {% endif %}
+      </div>
+    {% endif %}
+    <div class="card__body">
+      {{ caller() }}
+    </div>
+    {% if caller.footer %}
+      <div class="card__footer">
+        {{ caller.footer() }}
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# ========== Button Component ========== #}
+{% macro button(text, type='button', variant='primary', size='', href='', disabled=false, icon='', form_id='') %}
+  {% if href %}
+    <a href="{{ href }}" 
+       class="btn btn--{{ variant }} {% if size %}btn--{{ size }}{% endif %}"
+       {% if disabled %}aria-disabled="true"{% endif %}>
+      {% if icon %}<span aria-hidden="true">{{ icon }}</span>{% endif %}
+      {{ text }}
+    </a>
+  {% else %}
+    <button type="{{ type }}"
+            class="btn btn--{{ variant }} {% if size %}btn--{{ size }}{% endif %}"
+            {% if disabled %}disabled{% endif %}
+            {% if form_id %}form="{{ form_id }}"{% endif %}>
+      {% if icon %}<span aria-hidden="true">{{ icon }}</span>{% endif %}
+      {{ text }}
+    </button>
+  {% endif %}
+{% endmacro %}
+
+{# ========== Form Group (Label + Input) ========== #}
+{% macro form_input(name, label, type='text', value='', required=false, disabled=false, placeholder='', help_text='', error='', autocomplete='') %}
+  <div class="form-group">
+    <label for="{{ name }}" class="form-label {% if required %}form-label--required{% endif %}">
+      {{ label }}
+    </label>
+    <input type="{{ type }}"
+           id="{{ name }}"
+           name="{{ name }}"
+           class="form-input {% if error %}form-input--error{% endif %}"
+           value="{{ value }}"
+           {% if required %}required{% endif %}
+           {% if disabled %}disabled{% endif %}
+           {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+           {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+           {% if error %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}
+           {% for key, val in kwargs.items() %}{{ key }}="{{ val }}" {% endfor %}>
+    {% if help_text %}
+      <span class="form-help">{{ help_text }}</span>
+    {% endif %}
+    {% if error %}
+      <span class="form-error" id="{{ name }}-error">{{ error }}</span>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# ========== Textarea ========== #}
+{% macro form_textarea(name, label, value='', required=false, disabled=false, placeholder='', help_text='', error='', rows=4) %}
+  <div class="form-group">
+    <label for="{{ name }}" class="form-label {% if required %}form-label--required{% endif %}">
+      {{ label }}
+    </label>
+    <textarea id="{{ name }}"
+              name="{{ name }}"
+              class="form-textarea {% if error %}form-textarea--error{% endif %}"
+              rows="{{ rows }}"
+              {% if required %}required{% endif %}
+              {% if disabled %}disabled{% endif %}
+              {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+              {% if error %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>{{ value }}</textarea>
+    {% if help_text %}
+      <span class="form-help">{{ help_text }}</span>
+    {% endif %}
+    {% if error %}
+      <span class="form-error" id="{{ name }}-error">{{ error }}</span>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# ========== Select Dropdown ========== #}
+{% macro form_select(name, label, options=[], selected='', required=false, disabled=false, help_text='', error='') %}
+  <div class="form-group">
+    <label for="{{ name }}" class="form-label {% if required %}form-label--required{% endif %}">
+      {{ label }}
+    </label>
+    <select id="{{ name }}"
+            name="{{ name }}"
+            class="form-select {% if error %}form-select--error{% endif %}"
+            {% if required %}required{% endif %}
+            {% if disabled %}disabled{% endif %}
+            {% if error %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+      {% for option in options %}
+        {% if option is string %}
+          <option value="{{ option }}" {% if option == selected %}selected{% endif %}>{{ option }}</option>
+        {% else %}
+          <option value="{{ option[0] }}" {% if option[0] == selected %}selected{% endif %}>{{ option[1] }}</option>
+        {% endif %}
+      {% endfor %}
+    </select>
+    {% if help_text %}
+      <span class="form-help">{{ help_text }}</span>
+    {% endif %}
+    {% if error %}
+      <span class="form-error" id="{{ name }}-error">{{ error }}</span>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# ========== Checkbox ========== #}
+{% macro form_checkbox(name, label, checked=false, disabled=false, help_text='') %}
+  <div class="form-checkbox">
+    <input type="checkbox"
+           id="{{ name }}"
+           name="{{ name }}"
+           value="1"
+           {% if checked %}checked{% endif %}
+           {% if disabled %}disabled{% endif %}>
+    <label for="{{ name }}">
+      {{ label }}
+      {% if help_text %}
+        <span class="form-help form-help--inline">{{ help_text }}</span>
+      {% endif %}
+    </label>
+  </div>
+{% endmacro %}
+
+{# ========== Badge Component ========== #}
+{% macro badge(text, variant='gray') %}
+  <span class="badge badge--{{ variant }}">{{ text }}</span>
+{% endmacro %}
+
+{# ========== Alert Component ========== #}
+{% macro alert(message, type='info', title='', dismissible=false) %}
+  <div class="alert alert--{{ type }}" role="alert" {% if dismissible %}data-dismissible{% endif %}>
+    <div class="alert__content">
+      {% if title %}
+        <p class="alert__title">{{ title }}</p>
+      {% endif %}
+      <p class="alert__message">{{ message }}</p>
+    </div>
+  </div>
+{% endmacro %}
+
+{# ========== Empty State Component ========== #}
+{% macro empty_state(title, message, action_text='', action_url='') %}
+  <div class="empty-state">
+    <i class="fas fa-inbox empty-state__icon"></i>
+    <h3 class="empty-state__title">{{ title }}</h3>
+    <p class="empty-state__message">{{ message }}</p>
+    {% if action_text and action_url %}
+      {{ button(action_text, href=action_url, variant='primary') }}
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# ========== Loading Spinner ========== #}
+{% macro spinner(text='Loading...') %}
+  <div class="flex items-center justify-center gap-3" role="status" aria-live="polite">
+    <span class="spinner" aria-hidden="true"></span>
+    <span>{{ text }}</span>
+  </div>
+{% endmacro %}
+
+{# ========== Table Wrapper ========== #}
+{% macro table_wrapper(id='') %}
+  <div class="table-wrapper">
+    <table class="table" {% if id %}id="{{ id }}"{% endif %}>
+      {{ caller() }}
+    </table>
+  </div>
+{% endmacro %}
+
+{# ========== Confirmation Button (with data-confirm) ========== #}
+{% macro confirm_button(text, url, message, variant='danger', method='POST', csrf_token='') %}
+  <form method="{{ method }}" action="{{ url }}" class="form-inline">
+    {% if csrf_token %}
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% endif %}
+    <button type="submit" 
+            class="btn btn--{{ variant }} btn--sm"
+            data-confirm="{{ message }}">
+      {{ text }}
+    </button>
+  </form>
+{% endmacro %}
+
+{# ========== Status Badge ========== #}
+{% macro status_badge(status) %}
+  {% set status_lower = status|lower %}
+  {% if status_lower in ['approved', 'completed', 'sent', 'active'] %}
+    {{ badge(status, 'success') }}
+  {% elif status_lower in ['pending', 'queued', 'in_progress'] %}
+    {{ badge(status, 'warning') }}
+  {% elif status_lower in ['rejected', 'failed', 'error', 'cancelled'] %}
+    {{ badge(status, 'error') }}
+  {% else %}
+    {{ badge(status, 'gray') }}
+  {% endif %}
+{% endmacro %}
+
+{# ========== Pagination Component ========== #}
+{% macro pagination(page, total_pages, url_pattern) %}
+  {% if total_pages > 1 %}
+    <nav aria-label="Pagination" class="flex justify-center gap-2 mt-6">
+      {% if page > 1 %}
+        <a href="{{ url_pattern.replace('{page}', (page - 1)|string) }}" class="btn btn--outline btn--sm" aria-label="Previous page">
+          ← Previous
+        </a>
+      {% endif %}
+      
+      {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+          <span class="btn btn--primary btn--sm" aria-current="page">{{ p }}</span>
+        {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+          <a href="{{ url_pattern.replace('{page}', p|string) }}" class="btn btn--outline btn--sm">{{ p }}</a>
+        {% elif p == page - 3 or p == page + 3 %}
+          <span class="btn btn--ghost btn--sm">...</span>
+        {% endif %}
+      {% endfor %}
+      
+      {% if page < total_pages %}
+        <a href="{{ url_pattern.replace('{page}', (page + 1)|string) }}" class="btn btn--outline btn--sm" aria-label="Next page">
+          Next →
+        </a>
+      {% endif %}
+    </nav>
+  {% endif %}
+{% endmacro %}

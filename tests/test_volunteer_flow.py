@@ -1,9 +1,9 @@
 import os
 import tempfile
 import pytest
-from vms import create_app
-from vms.db import init_db, get_db
-from vms.models import gen_id
+from Backend import create_app
+from Backend.db import init_db, get_db
+from Backend.models import gen_id
 from werkzeug.security import generate_password_hash
 
 
@@ -47,7 +47,7 @@ def test_register_login_dashboard_signup(app, client):
     # Create an event directly in DB
     db = get_db()
     eid = gen_id('e_')
-    from vms.models import Event
+    from Backend.models import Event
     ev = Event(id=eid, name='Test Event', start_ts=None, end_ts=None, location='Room 1')
     db.add(ev)
     db.commit()
@@ -63,6 +63,6 @@ def test_register_login_dashboard_signup(app, client):
     assert b'Signed up for event' in resp.data
 
     # Check TimeLog was created
-    from vms.models import TimeLog
+    from Backend.models import TimeLog
     tl = db.query(TimeLog).filter_by(event_id=eid, student_email='volunteer@example.com').first()
     assert tl is not None

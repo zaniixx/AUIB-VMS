@@ -49,6 +49,8 @@
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
+  max-width: 80%;
+  overflow: hidden;
 }
 
 .btn:focus-visible {
@@ -151,6 +153,7 @@
 
 .btn--full {
   width: 100%;
+  align-self: center;
 }
 
 /* ========== Cards ========== */

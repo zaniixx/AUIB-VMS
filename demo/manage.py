@@ -8,10 +8,10 @@ Usage:
 import sys
 
 def init_db():
-    from vms import create_app
+    from Backend import create_app
     app = create_app()
     with app.app_context():
-        from vms.db import init_db, get_db
+        from Backend.db import init_db, get_db
         # init_db already called by create_app; ensure tables exist
         print('Database initialized (create_all performed at app startup).')
         print("\n📝 Demo Credentials (run 'python manage.py seed' to populate):")
@@ -22,7 +22,7 @@ def init_db():
 
 
 def seed():
-    from vms import create_app
+    from Backend import create_app
     app = create_app()
     with app.app_context():
         # Use the comprehensive seeding from seed_data.py instead of the basic one
@@ -32,10 +32,10 @@ def seed():
 
 def setup():
     """Initialize database and seed with sample data"""
-    from vms import create_app
+    from Backend import create_app
     app = create_app()
     with app.app_context():
-        from vms.db import init_db, get_db
+        from Backend.db import init_db, get_db
         # init_db already called by create_app; ensure tables exist
         print('Database initialized (create_all performed at app startup).')
         
@@ -45,7 +45,7 @@ def setup():
 
 
 def runserver():
-    from vms import create_app
+    from Backend import create_app
     app = create_app()
     app.run(debug=True, port=5000)
 

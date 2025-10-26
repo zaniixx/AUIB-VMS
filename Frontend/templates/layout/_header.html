@@ -1,0 +1,52 @@
+<header class="header">
+  <div class="header__inner">
+    <!-- Logo -->
+    <a href="{{ url_for('auth.home_page') }}" class="header__logo">
+      <i class="fas fa-users header__logo-icon"></i>
+      <span class="header__logo-text">
+        <span class="header__logo-title">AUIB VMS</span>
+        <span class="header__logo-subtitle">Volunteer Management System</span>
+      </span>
+    </a>
+
+    <!-- Actions (Auth + Admin Preview) -->
+    <div class="header__actions">
+      {% if current_user.is_authenticated %}
+        {# Admin-only preview controls: visible to admins (current_user.role) only #}
+        {% if current_user.role == 'admin' %}
+          <div class="header__admin-controls">
+            {% if is_viewing_as %}
+              <form method="post" action="{{ url_for('admin.stop_view_as') }}" class="header__admin-form">
+                <button type="submit" class="btn btn--warning btn--sm">
+                  Stop Viewing as {{ view_as_role }}
+                </button>
+              </form>
+            {% else %}
+              <form method="post" action="{{ url_for('admin.view_as') }}" class="header__admin-form">
+                <label for="view_as_role" class="sr-only">Preview as role</label>
+                <select id="view_as_role" name="role" class="form-select header__role-select">
+                  <option value="student">Student</option>
+                  <option value="officer">Officer</option>
+                  <option value="club_leader">Club Leader</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <button type="submit" class="btn btn--outline btn--sm">Preview</button>
+              </form>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <!-- User Info & Logout -->
+        <div class="header__user-info">
+          <span class="badge badge--primary header__user-badge">
+            {{ current_user.email }} ({{ current_user.role }})
+          </span>
+          <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost btn--sm">Logout</a>
+        </div>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn--outline btn--sm">Login</a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn--primary btn--sm">Register</a>
+      {% endif %}
+    </div>
+  </div>
+</header>

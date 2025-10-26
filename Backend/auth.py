@@ -21,7 +21,7 @@ def login():
         email = request.form.get('email')
         pw = request.form.get('password')
         db = get_db()
-        user = db.query(getattr(__import__('vms.models', fromlist=['User']), 'User')).filter_by(email=email).first()
+        user = db.query(models.User).filter_by(email=email).first()
         if user and check_password_hash(user.password_hash, pw):
             login_user(user)
             flash('Logged in')

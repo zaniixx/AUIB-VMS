@@ -94,6 +94,8 @@ htmlcov/
 # wheel
 *.whl
 
+./scripts
+
 # compiled assets
 *.pyc
 

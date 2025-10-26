@@ -1,8 +1,8 @@
 import os
 import tempfile
-from vms import create_app
-from vms.db import get_db
-from vms.models import gen_id
+from Backend import create_app
+from Backend.db import get_db
+from Backend.models import gen_id
 from werkzeug.security import generate_password_hash
 
 

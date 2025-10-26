@@ -1,6 +1,6 @@
-from vms import create_app
-from vms.db import get_db
-from vms import models
+from Backend import create_app
+from Backend.db import get_db
+from Backend import models
 
 class DummySMTP:
     def __init__(self, *a, **kw):
@@ -22,7 +22,7 @@ def run_tests_manual():
         # success path
         models.set_setting('SMTP_HOST', '127.0.0.1')
         models.set_setting('SMTP_PORT', '1025')
-        import vms.email as email_mod
+        import Backend.email as email_mod
         import smtplib
         orig = smtplib.SMTP
         try:
@@ -38,7 +38,7 @@ def run_tests_manual():
         try:
             # clear SMTP cache so fallback recreates the client
             try:
-                from vms.email import clear_smtp_cache
+                from Backend.email import clear_smtp_cache
                 clear_smtp_cache()
             except Exception:
                 pass
