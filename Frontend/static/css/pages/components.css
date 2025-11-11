@@ -291,6 +291,53 @@
   margin-top: var(--space-2);
 }
 
+/* Input group with suffix */
+.input-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+.input-group .form-input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+  flex: 1;
+}
+
+.input-group .form-input:focus {
+  border-right: none;
+  position: relative;
+  z-index: 2;
+}
+
+.input-group-suffix {
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-gray-700);
+  background-color: var(--color-gray-100);
+  border: 1px solid var(--color-gray-300);
+  border-left: none;
+  border-top-right-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+  white-space: nowrap;
+}
+
+.input-group .form-input:focus + .input-group-suffix {
+  border-color: var(--color-primary-500);
+}
+
+.input-group .form-input--error {
+  border-right: none;
+}
+
+.input-group .form-input--error + .input-group-suffix {
+  border-color: var(--color-error-500);
+}
+
 .form-checkbox,
 .form-radio {
   display: flex;

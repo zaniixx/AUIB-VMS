@@ -75,10 +75,13 @@ from werkzeug.security import generate_password_hash
 from .db import get_db
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+AUIB_EMAIL_RE = re.compile(r"^[^@\s]+@auib\.edu\.iq$", re.IGNORECASE)
 
 
 def is_valid_email(e):
-    return bool(EMAIL_RE.match((e or '').strip()))
+    """Validate email format and ensure it's an AUIB email address."""
+    email = (e or '').strip().lower()
+    return bool(EMAIL_RE.match(email) and AUIB_EMAIL_RE.match(email))
 
 
 def gen_id(prefix=''):

@@ -17,15 +17,25 @@
         help_text='Enter your full name as it should appear on certificates'
       ) }}
 
-      {{ ui.form_input(
-        name='email',
-        label='Email Address',
-        type='email',
-        required=true,
-        placeholder='your.email@auib.edu',
-        autocomplete='email',
-        help_text='Use your AUIB email address'
-      ) }}
+      <div class="form-group">
+        <label for="email-username" class="form-label form-label--required">
+          AUIB Email Address
+        </label>
+        <div class="input-group">
+          <input type="text"
+                 id="email-username"
+                 name="email-username"
+                 class="form-input"
+                 required
+                 placeholder="your.name"
+                 pattern="[a-zA-Z0-9._-]+"
+                 title="Only letters, numbers, dots, hyphens and underscores allowed"
+                 autocomplete="username">
+          <span class="input-group-suffix">@auib.edu.iq</span>
+        </div>
+        <input type="hidden" id="email" name="email" value="">
+        <span class="form-help">Enter your AUIB email username only</span>
+      </div>
 
       {{ ui.form_input(
         name='password',
@@ -62,4 +72,25 @@
     title='Welcome to AUIB VMS'
   ) }}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Combine username with domain before form submission
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[data-validate]');
+    const usernameInput = document.getElementById('email-username');
+    const emailInput = document.getElementById('email');
+    
+    if (form && usernameInput && emailInput) {
+      form.addEventListener('submit', function(e) {
+        // Combine username with @auib.edu.iq domain
+        const username = usernameInput.value.trim();
+        if (username) {
+          emailInput.value = username + '@auib.edu.iq';
+        }
+      });
+    }
+  });
+</script>
 {% endblock %}

@@ -189,7 +189,7 @@ def register():
             flash('Email and password are required')
             return redirect(request.url)
         if not models.is_valid_email(email):
-            flash('Invalid email address')
+            flash('Invalid email address. Please use your AUIB email (@auib.edu.iq)')
             return redirect(request.url)
         db = get_db()
         existing = db.query(models.User).filter_by(email=email).first()
