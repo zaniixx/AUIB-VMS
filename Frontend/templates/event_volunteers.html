@@ -27,6 +27,32 @@
         Back to Events
       </a>
     </div>
+    
+    {% if volunteers %}
+    <!-- Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
+      <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: var(--radius-lg); padding: var(--space-4);">
+        <div style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-2);">Total Signups</div>
+        <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-primary-600);">
+          {{ volunteers | length }}
+        </div>
+      </div>
+      
+      <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05)); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-lg); padding: var(--space-4);">
+        <div style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-2);">Pending Approval</div>
+        <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: #d97706;">
+          {{ volunteers | selectattr('status', 'equalto', 'PENDING') | list | length }}
+        </div>
+      </div>
+      
+      <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-lg); padding: var(--space-4);">
+        <div style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-2);">Approved</div>
+        <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-success-600);">
+          {{ volunteers | selectattr('status', 'equalto', 'APPROVED') | list | length }}
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   {% if volunteers %}
@@ -79,7 +105,32 @@
               </button>
             </form>
             {% else %}
-            <span style="font-size: var(--text-xs); color: var(--color-gray-500);">Pending approval</span>
+            {# Show approve/reject for any non-approved status (PENDING, REJECTED, etc.) #}
+            <form method="post" style="display: inline; margin-right: var(--space-2);">
+              <input type="hidden" name="volunteer_email" value="{{ volunteer.student_email }}" />
+              <button type="submit" 
+                      name="action" 
+                      value="approve"
+                      class="btn btn--primary btn--sm">
+                <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Approve
+              </button>
+            </form>
+            <form method="post" style="display: inline;">
+              <input type="hidden" name="volunteer_email" value="{{ volunteer.student_email }}" />
+              <button type="submit" 
+                      name="action" 
+                      value="reject"
+                      class="btn btn--danger btn--sm"
+                      data-confirm="Reject signup from {{ volunteer.volunteer_name }}?">
+                <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Reject
+              </button>
+            </form>
             {% endif %}
           </td>
         </tr>

@@ -1,5 +1,4 @@
 import os
-import tempfile
 import pytest
 from Backend import create_app
 from Backend.db import init_db, get_db
@@ -9,24 +8,30 @@ from werkzeug.security import generate_password_hash
 
 @pytest.fixture
 def app():
-    # Use a temporary SQLite file for isolation
-    db_fd, db_path = tempfile.mkstemp(suffix='.db')
-    os.close(db_fd)
-    os.environ['DATABASE_URL'] = f"sqlite:///{db_path}"
+    """
+    Test fixture using PostgreSQL database.
+    Requires DATABASE_URL environment variable to be set to a PostgreSQL test database.
+    Example: postgresql://user:password@localhost:5432/vms_test
+    """
+    # Ensure DATABASE_URL is set for PostgreSQL
+    if 'DATABASE_URL' not in os.environ or not os.environ['DATABASE_URL'].startswith('postgresql'):
+        pytest.skip("PostgreSQL DATABASE_URL required for tests")
+    
     app = create_app()
     app.config.update({
         'TESTING': True,
         'WTF_CSRF_ENABLED': False,
     })
 
+    # Clean up test data after test
     yield app
 
-    # teardown
+    # Optional: Clean up test database tables
     try:
-        os.remove(db_path)
+        db = get_db()
+        # Add cleanup logic here if needed
     except Exception:
         pass
-
 
 @pytest.fixture
 def client(app):

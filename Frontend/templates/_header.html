@@ -46,12 +46,13 @@
 
         <!-- User Info & Logout -->
         <div class="flex items-center gap-3 sm:hidden md:flex flex-wrap">
-          <span class="badge badge--primary" style="font-size: var(--text-sm);">
-            <span class="sm:hidden">{{ current_user.email[:15] }}...</span>
-            <span class="hidden sm:inline">{{ current_user.email }}</span>
-            ({{ current_user.role }})
-          </span>
-          <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost btn--sm">Logout</a>
+          <a href="{{ url_for('auth.profile') }}" class="user-profile-btn">
+            <i class="fas fa-user-circle"></i>
+            <span class="user-profile-btn__name">{{ current_user.name or current_user.email.split('@')[0] }}</span>
+          </a>
+          <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost btn--sm">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </a>
         </div>
       {% else %}
         <a href="{{ url_for('auth.login') }}" class="btn btn--outline btn--sm">Login</a>
@@ -116,6 +117,9 @@
 
         <!-- Actions -->
         <div class="mobile-menu__section">
+          <a href="{{ url_for('auth.profile') }}" class="btn btn--outline btn--full mb-3">
+            <i class="fas fa-user-circle"></i> My Profile
+          </a>
           <a href="{{ url_for('auth.logout') }}" class="btn btn--outline btn--full">
             <i class="fas fa-sign-out-alt"></i> Logout
           </a>

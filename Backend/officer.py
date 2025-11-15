@@ -41,6 +41,7 @@ def create_event():
         max_age = request.form.get('max_age')
         priority = request.form.get('priority', 'normal')
         entry_method = request.form.get('entry_method', 'file')
+        invite_volunteers = request.form.get('invite_volunteers') == 'on'  # Checkbox to enable volunteer invitations
         
         # Convert volunteer_limit to int if provided
         volunteer_limit_int = None
@@ -117,138 +118,147 @@ def create_event():
         db.add(ev)
         db.commit()
 
-        # Process volunteers based on entry method
-        if entry_method == 'file':
-            # File upload method
-            file = request.files.get('file')
-            if not file:
-                flash('File required when using file upload method')
-                db.delete(ev)
-                db.commit()
-                return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
-            
-            data = file.read()
-            try:
-                df = None
-                filename = file.filename.lower()
-                if filename.endswith('.csv') or file.mimetype == 'text/csv':
-                    df = pd.read_csv(io.BytesIO(data))
-                else:
-                    df = pd.read_excel(io.BytesIO(data))
-            except Exception as e:
-                flash('Failed to read file: ' + str(e))
-                db.delete(ev)
-                db.commit()
-                return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
-            
-            email_col = 'Email' if 'Email' in df.columns else ('email' if 'email' in df.columns else None)
-            if not email_col:
-                flash("File must contain 'Email' column")
-                db.delete(ev)
-                db.commit()
-                return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
-            
-            df['email_norm'] = df[email_col].astype(str).str.strip().str.lower()
-            # try to capture a name column if present for user-friendly output
-            name_col = None
-            if 'Name' in df.columns:
-                name_col = 'Name'
-            elif 'name' in df.columns:
-                name_col = 'name'
-            df = df[df['email_norm'].apply(models.is_valid_email)]
-            df = df.drop_duplicates(subset=['email_norm'])
-            
-            # Check volunteer limit
-            if volunteer_limit_int and len(df) > volunteer_limit_int:
-                flash(f'Too many volunteers in file. Limit is {volunteer_limit_int}, file contains {len(df)}.')
-                db.delete(ev)
-                db.commit()
-                return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
-            
-            volunteers_data = []
-            for idx, row in df.iterrows():
-                e = str(row['email_norm'])
-                display_name = (str(row[name_col]).strip() if name_col and not pd.isna(row.get(name_col)) else '') if name_col else ''
-                volunteers_data.append({'email': e, 'name': display_name or e.split('@')[0]})
+        # Process volunteers only if invite_volunteers is checked
+        volunteers_data = []
+        if invite_volunteers:
+            # Process volunteers based on entry method
+            if entry_method == 'file':
+                # File upload method
+                file = request.files.get('file')
+                if not file:
+                    flash('File required when using file upload method')
+                    db.delete(ev)
+                    db.commit()
+                    return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
                 
-        else:
-            # Manual entry method
-            volunteer_names = request.form.getlist('volunteer_names[]')
-            volunteer_emails = request.form.getlist('volunteer_emails[]')
-            
-            if not volunteer_emails or not any(email.strip() for email in volunteer_emails):
-                flash('At least one volunteer email is required')
-                db.delete(ev)
-                db.commit()
-                return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
-            
-            # Filter out empty entries
-            volunteers_data = []
-            for i, email in enumerate(volunteer_emails):
-                email = email.strip()
-                if email:
-                    if not models.is_valid_email(email):
-                        flash(f'Invalid email address: {email}')
-                        db.delete(ev)
-                        db.commit()
-                        return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
+                data = file.read()
+                try:
+                    df = None
+                    filename = file.filename.lower()
+                    if filename.endswith('.csv') or file.mimetype == 'text/csv':
+                        df = pd.read_csv(io.BytesIO(data))
+                    else:
+                        df = pd.read_excel(io.BytesIO(data))
+                except Exception as e:
+                    flash('Failed to read file: ' + str(e))
+                    db.delete(ev)
+                    db.commit()
+                    return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
+                
+                email_col = 'Email' if 'Email' in df.columns else ('email' if 'email' in df.columns else None)
+                if not email_col:
+                    flash("File must contain 'Email' column")
+                    db.delete(ev)
+                    db.commit()
+                    return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
+                
+                df['email_norm'] = df[email_col].astype(str).str.strip().str.lower()
+                # try to capture a name column if present for user-friendly output
+                name_col = None
+                if 'Name' in df.columns:
+                    name_col = 'Name'
+                elif 'name' in df.columns:
+                    name_col = 'name'
+                df = df[df['email_norm'].apply(models.is_valid_email)]
+                df = df.drop_duplicates(subset=['email_norm'])
+                
+                # Check volunteer limit
+                if volunteer_limit_int and len(df) > volunteer_limit_int:
+                    flash(f'Too many volunteers in file. Limit is {volunteer_limit_int}, file contains {len(df)}.')
+                    db.delete(ev)
+                    db.commit()
+                    return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
+                
+                for idx, row in df.iterrows():
+                    e = str(row['email_norm'])
+                    display_name = (str(row[name_col]).strip() if name_col and not pd.isna(row.get(name_col)) else '') if name_col else ''
+                    volunteers_data.append({'email': e, 'name': display_name or e.split('@')[0]})
                     
-                    name = volunteer_names[i].strip() if i < len(volunteer_names) else ''
-                    volunteers_data.append({
-                        'email': email.lower(),
-                        'name': name or email.split('@')[0]
-                    })
-            
-            # Remove duplicates
-            seen_emails = set()
-            unique_volunteers = []
-            for v in volunteers_data:
-                if v['email'] not in seen_emails:
-                    seen_emails.add(v['email'])
-                    unique_volunteers.append(v)
-            volunteers_data = unique_volunteers
-            
-            # Check volunteer limit
-            if volunteer_limit_int and len(volunteers_data) > volunteer_limit_int:
-                flash(f'Too many volunteers. Limit is {volunteer_limit_int}, you entered {len(volunteers_data)}.')
-                db.delete(ev)
-                db.commit()
-                return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
+            else:
+                # Manual entry method
+                volunteer_names = request.form.getlist('volunteer_names[]')
+                volunteer_emails = request.form.getlist('volunteer_emails[]')
+                
+                if not volunteer_emails or not any(email.strip() for email in volunteer_emails):
+                    flash('At least one volunteer email is required when inviting volunteers')
+                    db.delete(ev)
+                    db.commit()
+                    return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
+                
+                # Filter out empty entries
+                for i, email in enumerate(volunteer_emails):
+                    email = email.strip()
+                    if email:
+                        if not models.is_valid_email(email):
+                            flash(f'Invalid email address: {email}')
+                            db.delete(ev)
+                            db.commit()
+                            return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
+                        
+                        name = volunteer_names[i].strip() if i < len(volunteer_names) else ''
+                        volunteers_data.append({
+                            'email': email.lower(),
+                            'name': name or email.split('@')[0]
+                        })
+                
+                # Remove duplicates
+                seen_emails = set()
+                unique_volunteers = []
+                for v in volunteers_data:
+                    if v['email'] not in seen_emails:
+                        seen_emails.add(v['email'])
+                        unique_volunteers.append(v)
+                volunteers_data = unique_volunteers
+                
+                # Check volunteer limit
+                if volunteer_limit_int and len(volunteers_data) > volunteer_limit_int:
+                    flash(f'Too many volunteers. Limit is {volunteer_limit_int}, you entered {len(volunteers_data)}.')
+                    db.delete(ev)
+                    db.commit()
+                    return render_template('create_event.html', links=None, name=name, start=start_raw, end=end_raw, location=location, description=description, volunteer_limit=volunteer_limit, category=category, contact_name=contact_name, contact_email=contact_email, required_skills=required_skills, equipment_needed=equipment_needed, min_age=min_age, max_age=max_age, priority=priority)
 
-        # Generate links and send emails
-        from .log import make_logging_jwt
+        # Generate links and send emails only if there are volunteers to invite
         links = []
         links_info = []
-        email_map = {}
-        
-        for volunteer in volunteers_data:
-            token = make_logging_jwt(eid, volunteer['email'], current_app.config.get('JWT_EXP_HOURS',24))
-            link = url_for('log.log_via_jwt', jwt_token=token, _external=True)
-            links.append(link)
-            email_map[volunteer['email']] = link
-            links_info.append({'name': volunteer['name'], 'email': volunteer['email'], 'link': link})
-        
-        # attempt to send emails via the configured Mail subsystem (if initialized)
         sent = 0
         failed = 0
-        try:
-            from .email import send_email
-            subj = f"Logging link for event: {name}"
-            default_sender = current_app.config.get('MAIL_DEFAULT_SENDER')
-            # human-friendly event date for emails
-            ev_display = ev.display_date if hasattr(ev, 'display_date') else (start_raw or '')
-            for recipient, lnk in email_map.items():
-                body = f"Dear volunteer,\n\nYou have been invited to log volunteer hours for the event '{name}' ({ev_display}). Use the link below to start/stop your session:\n\n{lnk}\n\nThis link expires in {current_app.config.get('JWT_EXP_HOURS',24)} hours.\n\nThank you,\nAUIB VMS"
-                try:
-                    send_email(subj, body, recipient, sender=default_sender, async_send=True)
-                    sent += 1
-                except Exception:
-                    current_app.logger.exception('Failed to queue email to %s', recipient)
-                    failed += 1
-        except Exception:
-            current_app.logger.info('Mail subsystem not available; skipping auto-email send')
+        
+        if volunteers_data:
+            from .log import make_logging_jwt
+            email_map = {}
+            
+            for volunteer in volunteers_data:
+                token = make_logging_jwt(eid, volunteer['email'], current_app.config.get('JWT_EXP_HOURS',24))
+                link = url_for('log.log_via_jwt', jwt_token=token, _external=True)
+                links.append(link)
+                email_map[volunteer['email']] = link
+                links_info.append({'name': volunteer['name'], 'email': volunteer['email'], 'link': link})
+            
+            # attempt to send emails via the configured Mail subsystem (if initialized)
+            try:
+                from .email import send_email
+                subj = f"Logging link for event: {name}"
+                default_sender = current_app.config.get('MAIL_DEFAULT_SENDER')
+                # human-friendly event date for emails
+                ev_display = ev.display_date if hasattr(ev, 'display_date') else (start_raw or '')
+                for recipient, lnk in email_map.items():
+                    body = f"Dear volunteer,\n\nYou have been invited to log volunteer hours for the event '{name}' ({ev_display}). Use the link below to start/stop your session:\n\n{lnk}\n\nThis link expires in {current_app.config.get('JWT_EXP_HOURS',24)} hours.\n\nThank you,\nAUIB VMS"
+                    try:
+                        send_email(subj, body, recipient, sender=default_sender, async_send=True)
+                        sent += 1
+                    except Exception:
+                        current_app.logger.exception('Failed to queue email to %s', recipient)
+                        failed += 1
+            except Exception:
+                current_app.logger.info('Mail subsystem not available; skipping auto-email send')
 
-        flash(f'Event created with {len(links)} unique valid emails — emailed: {sent}, failed: {failed}')
+        if invite_volunteers and volunteers_data:
+            flash(f'Event created with {len(links)} unique valid emails — emailed: {sent}, failed: {failed}')
+        elif invite_volunteers and not volunteers_data:
+            flash('Event created but no valid volunteers were found to invite')
+        else:
+            flash('Event created successfully! Volunteers can now sign up on their own.')
+
     
     # pass form defaults back to template so values persist on validation errors / after POST
     return render_template('create_event.html', 
@@ -962,7 +972,35 @@ def view_event_volunteers(event_id):
         action = request.form.get('action')
         volunteer_email = request.form.get('volunteer_email')
         
-        if action == 'remove':
+        if action == 'approve':
+            # Approve the volunteer signup
+            timelog = db.query(models.TimeLog).filter_by(
+                event_id=event_id, 
+                student_email=volunteer_email
+            ).first()
+            
+            if timelog:
+                timelog.status = 'APPROVED'
+                db.commit()
+                flash(f'Approved {volunteer_email} for the event.', 'success')
+            else:
+                flash('Volunteer not found for this event.', 'error')
+        
+        elif action == 'reject':
+            # Reject and remove the volunteer signup
+            timelog = db.query(models.TimeLog).filter_by(
+                event_id=event_id, 
+                student_email=volunteer_email
+            ).first()
+            
+            if timelog:
+                db.delete(timelog)
+                db.commit()
+                flash(f'Rejected signup from {volunteer_email}.', 'success')
+            else:
+                flash('Volunteer not found for this event.', 'error')
+        
+        elif action == 'remove':
             # Find and remove the volunteer from this event
             timelog = db.query(models.TimeLog).filter_by(
                 event_id=event_id, 
@@ -972,9 +1010,9 @@ def view_event_volunteers(event_id):
             if timelog:
                 db.delete(timelog)
                 db.commit()
-                flash(f'Removed {volunteer_email} from the event.')
+                flash(f'Removed {volunteer_email} from the event.', 'success')
             else:
-                flash('Volunteer not found for this event.')
+                flash('Volunteer not found for this event.', 'error')
         
         return redirect(url_for('officer.view_event_volunteers', event_id=event_id))
     

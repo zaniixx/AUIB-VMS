@@ -345,6 +345,60 @@ def reset_role():
     return redirect(url_for('auth.home_page'))
 
 
+@bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    """User profile page where users can edit their information."""
+    if request.method == 'POST':
+        db = get_db()
+        user = db.query(models.User).filter_by(id=current_user.id).first()
+        if not user:
+            flash('User not found', 'danger')
+            return redirect(url_for('auth.home_page'))
+        
+        # Update name
+        name = request.form.get('name', '').strip()
+        if name:
+            user.name = name
+        
+        # Update student status
+        student_status = request.form.get('student_status', '').strip()
+        if student_status in ['ASP', 'UG', '']:
+            user.student_status = student_status if student_status else None
+        
+        # Update CGPA
+        cgpa_str = request.form.get('cgpa', '').strip()
+        if cgpa_str:
+            try:
+                cgpa = float(cgpa_str)
+                if 0.0 <= cgpa <= 4.0:
+                    user.cgpa = cgpa
+                else:
+                    flash('CGPA must be between 0.0 and 4.0', 'warning')
+            except ValueError:
+                flash('Invalid CGPA value', 'warning')
+        else:
+            user.cgpa = None
+        
+        # Update password if provided
+        new_password = request.form.get('password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+        if new_password:
+            if len(new_password) < 6:
+                flash('Password must be at least 6 characters', 'warning')
+            elif new_password != confirm_password:
+                flash('Passwords do not match', 'warning')
+            else:
+                user.password_hash = generate_password_hash(new_password)
+                flash('Password updated successfully', 'success')
+        
+        db.commit()
+        flash('Profile updated successfully', 'success')
+        return redirect(url_for('auth.profile'))
+    
+    return render_template('profile.html', user=current_user)
+
+
 @bp.app_context_processor
 def inject_current_user():
     return dict(current_user=current_user)

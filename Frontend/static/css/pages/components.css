@@ -163,6 +163,11 @@
 
 .btn--ghost:hover:not(:disabled) {
   background-color: var(--color-gray-100);
+  transform: translateY(-1px);
+}
+
+.btn--ghost:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 /* Button sizes */
@@ -782,6 +787,98 @@
   }
 }
 
+/* User Profile Button */
+.user-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: linear-gradient(135deg, var(--color-brand-main) 0%, #7a1a32 100%);
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  text-decoration: none;
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 4px rgba(156, 33, 63, 0.2);
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-profile-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.user-profile-btn:hover::before {
+  left: 100%;
+}
+
+.user-profile-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(156, 33, 63, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+.user-profile-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(156, 33, 63, 0.2);
+  animation: none;
+}
+
+.user-profile-btn i {
+  font-size: var(--text-lg);
+  transition: transform var(--transition-fast);
+  z-index: 1;
+}
+
+.user-profile-btn:hover i {
+  transform: scale(1.15) rotate(5deg);
+}
+
+.user-profile-btn__name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .user-profile-btn {
+    padding: var(--space-2) var(--space-3);
+  }
+  
+  .user-profile-btn__name {
+    max-width: 100px;
+  }
+}
+
+@media (max-width: 640px) {
+  .user-profile-btn__name {
+    display: none;
+  }
+  
+  .user-profile-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    justify-content: center;
+  }
+  
+  .user-profile-btn i {
+    font-size: var(--text-xl);
+  }
+}
+
 /* Mobile menu overlay */
 .mobile-menu {
   position: fixed;
@@ -1008,6 +1105,15 @@
   }
   100% {
     background-position: 200% 0;
+  }
+}
+
+@keyframes subtle-pulse {
+  0%, 100% {
+    box-shadow: 0 2px 4px rgba(156, 33, 63, 0.2);
+  }
+  50% {
+    box-shadow: 0 2px 8px rgba(156, 33, 63, 0.3);
   }
 }
 

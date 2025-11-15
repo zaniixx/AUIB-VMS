@@ -1,0 +1,687 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/profile-enhanced.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="profile-page">
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <ol class="breadcrumb__list">
+      <li class="breadcrumb__item">
+        <a href="{{ url_for('auth.home_page') }}" class="breadcrumb__link">
+          <i class="fas fa-home"></i>
+          Dashboard
+        </a>
+      </li>
+      <li class="breadcrumb__item breadcrumb__item--active">
+        <i class="fas fa-user-circle"></i>
+        My Profile
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Page Header with User Card -->
+  <div class="profile-page__header">
+    <div class="user-card">
+      <div class="user-card__avatar">
+        <div class="user-card__avatar-circle">
+          <i class="fas fa-user-circle"></i>
+        </div>
+        <div class="user-card__avatar-badge">
+          <i class="fas fa-check-circle"></i>
+        </div>
+      </div>
+      <div class="user-card__info">
+        <h1 class="user-card__name">{{ user.name or 'User' }}</h1>
+        <p class="user-card__email">{{ user.email }}</p>
+        <div class="user-card__meta">
+          <span class="badge badge--{{ 'primary' if user.role == 'officer' else 'secondary' if user.role == 'admin' else 'success' }}">
+            <i class="fas fa-{{ 'shield-alt' if user.role == 'admin' else 'user-tie' if user.role == 'officer' else 'graduation-cap' }}"></i>
+            {{ user.role.replace('_', ' ').title() }}
+          </span>
+          {% if user.student_status %}
+          <span class="badge badge--info">
+            <i class="fas fa-book"></i>
+            {{ user.student_status }}
+          </span>
+          {% endif %}
+          {% if user.cgpa %}
+          <span class="badge badge--warning">
+            <i class="fas fa-star"></i>
+            GPA: {{ "%.2f"|format(user.cgpa) }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Form -->
+  <form method="POST" action="{{ url_for('auth.profile') }}" class="profile-form" id="profileForm" autocomplete="off">
+    <div class="profile-grid">
+      
+      <!-- Account Information Card -->
+      <div class="profile-card profile-card--animated">
+        <div class="profile-card__header">
+          <div class="profile-card__icon profile-card__icon--primary">
+            <i class="fas fa-id-card"></i>
+          </div>
+          <div class="profile-card__header-text">
+            <h2 class="profile-card__title">Personal Information</h2>
+            <p class="profile-card__subtitle">Update your basic account details</p>
+          </div>
+        </div>
+        <div class="profile-card__body">
+          <div class="form-field">
+            <label for="name" class="form-field__label">
+              <i class="fas fa-user"></i>
+              Full Name
+              <span class="form-field__required">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="name" 
+              name="name" 
+              class="form-field__input" 
+              value="{{ user.name or '' }}"
+              placeholder="Enter your full name"
+              required
+              autocomplete="name"
+            >
+            <small class="form-field__hint form-field__hint--help">
+              <i class="fas fa-lightbulb"></i>
+              Your name will be displayed across the system
+            </small>
+          </div>
+
+          <div class="form-field">
+            <label for="email" class="form-field__label">
+              <i class="fas fa-envelope"></i>
+              Email Address
+            </label>
+            <div class="form-field__input-group">
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                class="form-field__input form-field__input--disabled" 
+                value="{{ user.email }}"
+                disabled
+                readonly
+                autocomplete="email"
+              >
+              <div class="form-field__addon" title="Email is locked and cannot be changed">
+                <i class="fas fa-lock"></i>
+              </div>
+            </div>
+            <small class="form-field__hint">
+              <i class="fas fa-shield-alt"></i>
+              Your AUIB email is permanently linked to your account
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Card for Officers/Admins (Second Position) -->
+      {% if current_user.role in ['officer', 'admin'] %}
+      <div class="profile-card profile-card--animated" style="animation-delay: 0.1s;">
+        <div class="profile-card__header">
+          <div class="profile-card__icon profile-card__icon--warning">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <div class="profile-card__header-text">
+            <h2 class="profile-card__title">Security & Authentication</h2>
+            <p class="profile-card__subtitle">Manage your password and account security</p>
+          </div>
+        </div>
+        <div class="profile-card__body">
+          
+          <!-- Password Strength Indicator -->
+          <div class="security-notice">
+            <i class="fas fa-info-circle"></i>
+            <div class="security-notice__content">
+              <strong>Password Guidelines:</strong>
+              <ul>
+                <li>Minimum 6 characters required</li>
+                <li>Use a mix of letters, numbers, and symbols for better security</li>
+                <li>Leave blank if you don't want to change your password</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="password-grid">
+            <div class="form-field">
+              <label for="password" class="form-field__label">
+                <i class="fas fa-key"></i>
+                New Password
+              </label>
+              <div class="form-field__input-wrapper">
+                <input 
+                  type="password" 
+                  id="password" 
+                  name="password" 
+                  class="form-field__input" 
+                  placeholder="Enter new password"
+                  minlength="6"
+                  autocomplete="new-password"
+                >
+                <button type="button" class="form-field__toggle" onclick="togglePassword('password')" aria-label="Toggle password visibility" title="Show password">
+                  <i class="fas fa-eye" id="password-icon"></i>
+                </button>
+              </div>
+              <div class="password-strength" id="passwordStrength">
+                <div class="password-strength__bar">
+                  <div class="password-strength__fill" id="strengthBar"></div>
+                </div>
+                <span class="password-strength__text" id="strengthText">Enter a password to see strength</span>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label for="confirm_password" class="form-field__label">
+                <i class="fas fa-check-double"></i>
+                Confirm New Password
+              </label>
+              <div class="form-field__input-wrapper">
+                <input 
+                  type="password" 
+                  id="confirm_password" 
+                  name="confirm_password" 
+                  class="form-field__input" 
+                  placeholder="Re-enter new password"
+                  autocomplete="new-password"
+                >
+                <button type="button" class="form-field__toggle" onclick="togglePassword('confirm_password')" aria-label="Toggle password visibility" title="Show password">
+                  <i class="fas fa-eye" id="confirm_password-icon"></i>
+                </button>
+              </div>
+              <small class="form-field__hint" id="matchHint">
+                <i class="fas fa-arrows-alt-h"></i>
+                Passwords must match
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Academic Information Card (Students/Club Leaders Only) -->
+      {% if current_user.role not in ['officer', 'admin'] %}
+      <div class="profile-card profile-card--animated" style="animation-delay: 0.1s;">
+        <div class="profile-card__header">
+          <div class="profile-card__icon profile-card__icon--success">
+            <i class="fas fa-graduation-cap"></i>
+          </div>
+          <div class="profile-card__header-text">
+            <h2 class="profile-card__title">Academic Information</h2>
+            <p class="profile-card__subtitle">Track your academic status and performance</p>
+          </div>
+        </div>
+        <div class="profile-card__body">
+          <div class="form-field">
+            <label for="student_status" class="form-field__label">
+              <i class="fas fa-user-graduate"></i>
+              Student Status
+            </label>
+            <div class="form-field__select-wrapper">
+              <select id="student_status" name="student_status" class="form-field__select">
+                <option value="">Not specified</option>
+                <option value="ASP" {% if user.student_status == 'ASP' %}selected{% endif %}>🎓 ASP - Advanced Standing Program</option>
+                <option value="UG" {% if user.student_status == 'UG' %}selected{% endif %}>📚 UG - Undergraduate</option>
+              </select>
+            </div>
+            <small class="form-field__hint">
+              <i class="fas fa-info-circle"></i>
+              Select your current enrollment program
+            </small>
+          </div>
+
+          <div class="form-field">
+            <label for="cgpa" class="form-field__label">
+              <i class="fas fa-chart-line"></i>
+              Cumulative GPA
+            </label>
+            <div class="cgpa-input-group">
+              <div class="form-field__input-wrapper">
+                <input 
+                  type="number" 
+                  id="cgpa" 
+                  name="cgpa" 
+                  class="form-field__input form-field__input--number" 
+                  value="{{ user.cgpa if user.cgpa is not none else '' }}"
+                  min="0.0" 
+                  max="4.0" 
+                  step="0.01"
+                  placeholder="0.00"
+                  autocomplete="off"
+                >
+                <span class="form-field__suffix">/ 4.0</span>
+              </div>
+              <div class="cgpa-meter" id="cgpaMeter">
+                <div class="cgpa-meter__bar" id="cgpaBar"></div>
+              </div>
+              <div class="cgpa-rating" id="cgpaRating"></div>
+            </div>
+            <small class="form-field__hint">
+              <i class="fas fa-calculator"></i>
+              Enter your current CGPA on a 4.0 scale
+            </small>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Security Card for Students/Club Leaders (Third Position) -->
+      {% if current_user.role not in ['officer', 'admin'] %}
+      <div class="profile-card profile-card--full profile-card--animated" style="animation-delay: 0.2s;">
+        <div class="profile-card__header">
+          <div class="profile-card__icon profile-card__icon--warning">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <div class="profile-card__header-text">
+            <h2 class="profile-card__title">Security & Authentication</h2>
+            <p class="profile-card__subtitle">Manage your password and account security</p>
+          </div>
+        </div>
+        <div class="profile-card__body">
+          
+          <!-- Password Strength Indicator -->
+          <div class="security-notice">
+            <i class="fas fa-info-circle"></i>
+            <div class="security-notice__content">
+              <strong>Password Guidelines:</strong>
+              <ul>
+                <li>Minimum 6 characters required</li>
+                <li>Use a mix of letters, numbers, and symbols for better security</li>
+                <li>Leave blank if you don't want to change your password</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="password-grid">
+            <div class="form-field">
+              <label for="password" class="form-field__label">
+                <i class="fas fa-key"></i>
+                New Password
+              </label>
+              <div class="form-field__input-wrapper">
+                <input 
+                  type="password" 
+                  id="password" 
+                  name="password" 
+                  class="form-field__input" 
+                  placeholder="Enter new password"
+                  minlength="6"
+                  autocomplete="new-password"
+                >
+                <button type="button" class="form-field__toggle" onclick="togglePassword('password')" aria-label="Toggle password visibility" title="Show password">
+                  <i class="fas fa-eye" id="password-icon"></i>
+                </button>
+              </div>
+              <div class="password-strength" id="passwordStrength">
+                <div class="password-strength__bar">
+                  <div class="password-strength__fill" id="strengthBar"></div>
+                </div>
+                <span class="password-strength__text" id="strengthText">Enter a password to see strength</span>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label for="confirm_password" class="form-field__label">
+                <i class="fas fa-check-double"></i>
+                Confirm New Password
+              </label>
+              <div class="form-field__input-wrapper">
+                <input 
+                  type="password" 
+                  id="confirm_password" 
+                  name="confirm_password" 
+                  class="form-field__input" 
+                  placeholder="Re-enter new password"
+                  autocomplete="new-password"
+                >
+                <button type="button" class="form-field__toggle" onclick="togglePassword('confirm_password')" aria-label="Toggle password visibility" title="Show password">
+                  <i class="fas fa-eye" id="confirm_password-icon"></i>
+                </button>
+              </div>
+              <small class="form-field__hint" id="matchHint">
+                <i class="fas fa-arrows-alt-h"></i>
+                Passwords must match
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- Action Buttons with Better UX -->
+    <div class="profile-actions">
+      <div class="profile-actions__left">
+        <a href="{{ url_for('auth.home_page') }}" class="btn btn--ghost btn--lg">
+          <i class="fas fa-arrow-left"></i>
+          <span>Cancel</span>
+        </a>
+      </div>
+      <div class="profile-actions__right">
+        <button type="reset" class="btn btn--outline btn--lg" id="resetBtn">
+          <i class="fas fa-undo"></i>
+          <span>Reset Changes</span>
+        </button>
+        <button type="submit" class="btn btn--primary btn--lg" id="submitBtn">
+          <i class="fas fa-save"></i>
+          <span>Save Changes</span>
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+// ========== Password Visibility Toggle ==========
+function togglePassword(fieldId) {
+  const field = document.getElementById(fieldId);
+  const icon = document.getElementById(fieldId + '-icon');
+  const button = icon.closest('button');
+  
+  if (field.type === 'password') {
+    field.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+    button.setAttribute('title', 'Hide password');
+    button.setAttribute('aria-label', 'Hide password');
+  } else {
+    field.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+    button.setAttribute('title', 'Show password');
+    button.setAttribute('aria-label', 'Show password');
+  }
+}
+
+// ========== Password Strength Calculator ==========
+function calculatePasswordStrength(password) {
+  if (!password) return { score: 0, text: 'Enter a password to see strength', color: 'gray' };
+  
+  let score = 0;
+  const feedback = [];
+  
+  // Length check
+  if (password.length >= 8) score += 25;
+  else if (password.length >= 6) score += 15;
+  
+  // Character diversity
+  if (/[a-z]/.test(password)) score += 15;
+  if (/[A-Z]/.test(password)) score += 15;
+  if (/[0-9]/.test(password)) score += 20;
+  if (/[^a-zA-Z0-9]/.test(password)) score += 25;
+  
+  // Determine strength level
+  let text, color;
+  if (score < 40) {
+    text = 'Weak';
+    color = 'danger';
+  } else if (score < 60) {
+    text = 'Fair';
+    color = 'warning';
+  } else if (score < 80) {
+    text = 'Good';
+    color = 'info';
+  } else {
+    text = 'Strong';
+    color = 'success';
+  }
+  
+  return { score, text, color };
+}
+
+// ========== CGPA Visual Feedback ==========
+function updateCGPAMeter(value) {
+  const meter = document.getElementById('cgpaMeter');
+  const bar = document.getElementById('cgpaBar');
+  const rating = document.getElementById('cgpaRating');
+  
+  if (!meter || !bar || !rating) return;
+  
+  if (!value || value === '') {
+    bar.style.width = '0%';
+    rating.innerHTML = '';
+    return;
+  }
+  
+  const cgpa = parseFloat(value);
+  if (isNaN(cgpa) || cgpa < 0 || cgpa > 4) return;
+  
+  const percentage = (cgpa / 4) * 100;
+  bar.style.width = percentage + '%';
+  
+  let ratingText, ratingClass;
+  if (cgpa >= 3.75) {
+    ratingText = '<i class="fas fa-trophy"></i> Excellent';
+    ratingClass = 'excellent';
+  } else if (cgpa >= 3.5) {
+    ratingText = '<i class="fas fa-star"></i> Very Good';
+    ratingClass = 'very-good';
+  } else if (cgpa >= 3.0) {
+    ratingText = '<i class="fas fa-thumbs-up"></i> Good';
+    ratingClass = 'good';
+  } else if (cgpa >= 2.5) {
+    ratingText = '<i class="fas fa-check"></i> Satisfactory';
+    ratingClass = 'satisfactory';
+  } else {
+    ratingText = '<i class="fas fa-arrow-up"></i> Keep improving';
+    ratingClass = 'needs-improvement';
+  }
+  
+  bar.className = 'cgpa-meter__bar cgpa-meter__bar--' + ratingClass;
+  rating.innerHTML = ratingText;
+  rating.className = 'cgpa-rating cgpa-rating--' + ratingClass;
+}
+
+// ========== Form Validation with Enhanced UX ==========
+document.getElementById('profileForm').addEventListener('submit', function(e) {
+  const password = document.getElementById('password').value;
+  const confirmPassword = document.getElementById('confirm_password').value;
+  
+  // Clear previous error styling
+  document.querySelectorAll('.form-field__input').forEach(input => {
+    input.classList.remove('form-field__input--error');
+  });
+  
+  // Password validation
+  if (password && password !== confirmPassword) {
+    e.preventDefault();
+    document.getElementById('password').classList.add('form-field__input--error');
+    document.getElementById('confirm_password').classList.add('form-field__input--error');
+    
+    // Show toast notification instead of alert
+    showNotification('error', 'Passwords do not match', 'Please make sure both password fields are identical.');
+    document.getElementById('confirm_password').focus();
+    return false;
+  }
+  
+  if (password && password.length < 6) {
+    e.preventDefault();
+    document.getElementById('password').classList.add('form-field__input--error');
+    showNotification('error', 'Password too short', 'Password must be at least 6 characters long.');
+    document.getElementById('password').focus();
+    return false;
+  }
+  
+  // CGPA validation
+  const cgpa = document.getElementById('cgpa');
+  if (cgpa && cgpa.value && (parseFloat(cgpa.value) < 0 || parseFloat(cgpa.value) > 4)) {
+    e.preventDefault();
+    cgpa.classList.add('form-field__input--error');
+    showNotification('error', 'Invalid CGPA', 'CGPA must be between 0.0 and 4.0.');
+    cgpa.focus();
+    return false;
+  }
+  
+  // Show loading state on submit button
+  const submitBtn = this.querySelector('button[type="submit"]');
+  const originalHTML = submitBtn.innerHTML;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Saving...</span>';
+  submitBtn.disabled = true;
+  submitBtn.classList.add('btn--loading');
+  
+  // Re-enable if validation fails
+  setTimeout(() => {
+    if (submitBtn.disabled) {
+      submitBtn.innerHTML = originalHTML;
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('btn--loading');
+    }
+  }, 5000);
+});
+
+// ========== Real-time Password Strength Indicator ==========
+const passwordInput = document.getElementById('password');
+if (passwordInput) {
+  passwordInput.addEventListener('input', function() {
+    const strength = calculatePasswordStrength(this.value);
+    const strengthBar = document.getElementById('strengthBar');
+    const strengthText = document.getElementById('strengthText');
+    
+    if (strengthBar && strengthText) {
+      strengthBar.style.width = strength.score + '%';
+      strengthBar.className = 'password-strength__fill password-strength__fill--' + strength.color;
+      strengthText.textContent = strength.text;
+      strengthText.className = 'password-strength__text password-strength__text--' + strength.color;
+    }
+  });
+}
+
+// ========== Real-time Password Match Indicator ==========
+const confirmPasswordInput = document.getElementById('confirm_password');
+if (confirmPasswordInput) {
+  confirmPasswordInput.addEventListener('input', function() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = this.value;
+    const matchHint = document.getElementById('matchHint');
+    
+    if (!confirmPassword) {
+      this.classList.remove('form-field__input--success', 'form-field__input--warning');
+      matchHint.innerHTML = '<i class="fas fa-arrows-alt-h"></i> Passwords must match';
+      matchHint.className = 'form-field__hint';
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      this.classList.remove('form-field__input--success');
+      this.classList.add('form-field__input--warning');
+      matchHint.innerHTML = '<i class="fas fa-times-circle"></i> Passwords do not match';
+      matchHint.classList.add('form-field__hint--error');
+    } else {
+      this.classList.remove('form-field__input--warning');
+      this.classList.add('form-field__input--success');
+      matchHint.innerHTML = '<i class="fas fa-check-circle"></i> Passwords match!';
+      matchHint.classList.remove('form-field__hint--error');
+      matchHint.classList.add('form-field__hint--success');
+    }
+  });
+}
+
+// ========== CGPA Input Formatting ==========
+const cgpaInput = document.getElementById('cgpa');
+if (cgpaInput) {
+  cgpaInput.addEventListener('input', function() {
+    updateCGPAMeter(this.value);
+  });
+  
+  cgpaInput.addEventListener('blur', function() {
+    if (this.value && this.value !== '') {
+      const value = parseFloat(this.value);
+      if (!isNaN(value)) {
+        this.value = Math.max(0, Math.min(4, value)).toFixed(2);
+        updateCGPAMeter(this.value);
+      }
+    }
+  });
+  
+  // Initialize on page load
+  if (cgpaInput.value) {
+    updateCGPAMeter(cgpaInput.value);
+  }
+}
+
+// ========== Reset Button Functionality ==========
+document.getElementById('resetBtn').addEventListener('click', function() {
+  if (confirm('Are you sure you want to reset all changes? This cannot be undone.')) {
+    // Clear password fields specifically
+    document.getElementById('password').value = '';
+    document.getElementById('confirm_password').value = '';
+    
+    // Reset strength indicators
+    const strengthBar = document.getElementById('strengthBar');
+    const strengthText = document.getElementById('strengthText');
+    if (strengthBar && strengthText) {
+      strengthBar.style.width = '0%';
+      strengthText.textContent = 'Enter a password to see strength';
+      strengthText.className = 'password-strength__text';
+    }
+    
+    showNotification('info', 'Form Reset', 'All changes have been reset to original values.');
+  }
+});
+
+// ========== Toast Notification System ==========
+function showNotification(type, title, message) {
+  const notification = document.createElement('div');
+  notification.className = `toast toast--${type}`;
+  notification.innerHTML = `
+    <div class="toast__icon">
+      <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+    </div>
+    <div class="toast__content">
+      <div class="toast__title">${title}</div>
+      <div class="toast__message">${message}</div>
+    </div>
+    <button class="toast__close" onclick="this.parentElement.remove()">
+      <i class="fas fa-times"></i>
+    </button>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Trigger animation
+  setTimeout(() => notification.classList.add('toast--show'), 10);
+  
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    notification.classList.remove('toast--show');
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
+}
+
+// ========== Form Change Detection ==========
+let formChanged = false;
+const form = document.getElementById('profileForm');
+const inputs = form.querySelectorAll('input:not([type="submit"]), select');
+
+inputs.forEach(input => {
+  input.addEventListener('change', () => {
+    formChanged = true;
+  });
+});
+
+// Warn user about unsaved changes
+window.addEventListener('beforeunload', function(e) {
+  if (formChanged) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
+
+// Reset change detection on form submit
+form.addEventListener('submit', () => {
+  formChanged = false;
+});
+</script>
+{% endblock %}

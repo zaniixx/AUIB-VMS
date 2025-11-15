@@ -65,9 +65,27 @@ The demo includes:
 
 ### 🐍 Option 2: Local Development
 
+**Prerequisites:**
+- Python 3.11 or higher
+- PostgreSQL 15+ installed and running
+- PostgreSQL database created (e.g., `vms`)
+
 Open PowerShell/bash in the repository root.
 
-1) **Create and activate a virtual environment:**
+1) **Set up PostgreSQL and environment variables:**
+
+```bash
+# Create PostgreSQL database
+# Using psql: createdb vms
+
+# Set DATABASE_URL environment variable (Windows PowerShell)
+$env:DATABASE_URL = "postgresql://your_user:your_password@localhost:5432/vms"
+
+# Set DATABASE_URL environment variable (Linux/Mac)
+export DATABASE_URL="postgresql://your_user:your_password@localhost:5432/vms"
+```
+
+2) **Create and activate a virtual environment:**
 
 ```bash
 # Create venv
@@ -80,13 +98,13 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-2) **Install dependencies:**
+3) **Install dependencies:**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3) **Set up the database:**
+4) **Set up the database:**
 
 ```bash
 # Initialize database (creates tables)
@@ -96,7 +114,7 @@ python manage.py init-db
 python manage.py seed
 ```
 
-4) **Run the application:**
+5) **Run the application:**
 
 ```bash
 python app.py
@@ -202,6 +220,27 @@ docker-compose logs -f
 docker-compose down -v
 ```
 
+### Running Tests
+
+Tests require a PostgreSQL database connection:
+
+```bash
+# Set up test database
+createdb vms_test
+
+# Set DATABASE_URL for testing (Windows PowerShell)
+$env:DATABASE_URL = "postgresql://your_user:your_password@localhost:5432/vms_test"
+
+# Set DATABASE_URL for testing (Linux/Mac)
+export DATABASE_URL="postgresql://your_user:your_password@localhost:5432/vms_test"
+
+# Run tests with pytest
+pytest tests/
+
+# Run specific test file
+pytest tests/test_volunteer_flow.py
+```
+
 ### Automated Setup
 
 Use the PowerShell setup script for automated environment setup:
@@ -225,16 +264,18 @@ Configuration
 The application supports the following environment variables:
 
 **Database:**
-- `DATABASE_URL` - Database connection string (default: SQLite file)
+- `DATABASE_URL` - PostgreSQL connection string (required)
+  - Format: `postgresql://user:password@host:port/database`
+  - Example: `postgresql://vms:vms_pass@localhost:5432/vms`
 
 **Security:**
 - `VMS_SECRET_KEY` - Flask secret key (required for production)
 - `VMS_JWT_SECRET` - JWT signing secret (optional, defaults to Flask secret)
 
 **Database Connection Pooling:**
-- `DB_POOL_SIZE` - Connection pool size (default: 5 for SQLite, 10 for PostgreSQL)
-- `DB_MAX_OVERFLOW` - Max overflow connections (default: 10 for SQLite, 20 for PostgreSQL)
-- `DB_POOL_TIMEOUT` - Pool timeout in seconds (default: 30 for SQLite, 60 for PostgreSQL)
+- `DB_POOL_SIZE` - Connection pool size (default: 10)
+- `DB_MAX_OVERFLOW` - Max overflow connections (default: 20)
+- `DB_POOL_TIMEOUT` - Pool timeout in seconds (default: 60)
 
 ### Email Configuration
 
@@ -422,7 +463,8 @@ Development Notes
 - The system uses SQLAlchemy 2.0 with modern ORM patterns
 - JWT tokens expire after 24 hours (configurable)
 - Database schema migrations are automatic on startup
-- The application supports both SQLite (development) and PostgreSQL (production)
+- The application requires PostgreSQL as the database backend
+- Connection pooling is configured for optimal PostgreSQL performance
 
 API Endpoints
 -------------

@@ -188,71 +188,93 @@
 
         <!-- Volunteer Entry Method Toggle -->
         <div class="form-group">
-          <label class="form-label">How would you like to add volunteers?</label>
-          <div style="display: flex; gap: var(--space-4); margin-top: var(--space-2);">
-            <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
-              <input type="radio" name="entry_method" value="file" checked onchange="toggleEntryMethod()">
-              <span>Upload File</span>
-            </label>
-            <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
-              <input type="radio" name="entry_method" value="manual" onchange="toggleEntryMethod()">
-              <span>Manual Entry</span>
+          <div class="flex items-start gap-3 mb-4" style="background-color: var(--color-primary-50); padding: var(--space-4); border-radius: var(--radius-lg); border-left: 4px solid var(--color-primary-600);">
+            <input type="checkbox" 
+                   id="invite_volunteers" 
+                   name="invite_volunteers" 
+                   class="form-checkbox"
+                   style="margin-top: 2px;"
+                   onchange="toggleVolunteerInvitations()">
+            <label for="invite_volunteers" style="cursor: pointer; flex: 1; margin: 0;">
+              <span style="font-weight: var(--font-semibold); display: block; margin-bottom: var(--space-1);">
+                Invite Specific Volunteers
+              </span>
+              <span style="font-size: var(--text-sm); color: var(--color-gray-700);">
+                Check this box to pre-invite volunteers via email. If unchecked, volunteers can sign up on their own through the volunteer dashboard.
+              </span>
             </label>
           </div>
         </div>
 
-        <!-- File Upload Section -->
-        <div id="file-upload-section" class="form-group">
-          <label for="file" class="form-label">Volunteer File (CSV or Excel)</label>
-          <input type="file" 
-                 id="file" 
-                 name="file" 
-                 accept=".csv,.xlsx,.xls"
-                 class="form-input">
-          <span class="form-help">
-            Upload a CSV or Excel file with an <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">Email</code> or <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">email</code> column. Optionally include a <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">Name</code> or <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">name</code> column. Volunteers will receive invitation links via email.
-          </span>
-        </div>
-
-        <!-- Manual Entry Section -->
-        <div id="manual-entry-section" class="form-group" style="display: none;">
-          <label class="form-label">Volunteer List</label>
-          <div id="volunteers-container">
-            <div class="volunteer-entry" style="display: flex; gap: var(--space-3); align-items: end; margin-bottom: var(--space-3);">
-              <div style="flex: 1;">
-                {{ ui.form_input(
-                  name='volunteer_names[]',
-                  label='Name',
-                  type='text',
-                  placeholder='John Doe',
-                  help_text='Volunteer full name'
-                ) }}
-              </div>
-              <div style="flex: 1;">
-                {{ ui.form_input(
-                  name='volunteer_emails[]',
-                  label='Email',
-                  type='email',
-                  placeholder='john.doe@auib.edu',
-                  help_text='Volunteer email address'
-                ) }}
-              </div>
-              <button type="button" class="btn btn--outline btn--sm" onclick="removeVolunteer(this)" style="margin-bottom: var(--space-2);">
-                <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
+        <!-- Volunteer Invitation Section (only shown when checkbox is checked) -->
+        <div id="volunteer-invitation-section" style="display: none;">
+          <div class="form-group">
+            <label class="form-label">How would you like to add volunteers?</label>
+            <div style="display: flex; gap: var(--space-4); margin-top: var(--space-2);">
+              <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
+                <input type="radio" name="entry_method" value="file" checked onchange="toggleEntryMethod()">
+                <span>Upload File</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
+                <input type="radio" name="entry_method" value="manual" onchange="toggleEntryMethod()">
+                <span>Manual Entry</span>
+              </label>
             </div>
           </div>
-          <button type="button" class="btn btn--secondary btn--sm" onclick="addVolunteer()">
-            <svg style="width: 1rem; height: 1rem; margin-right: var(--space-2);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Another Volunteer
-          </button>
-          <span class="form-help" style="display: block; margin-top: var(--space-2);">
-            Add volunteers manually. Each volunteer will receive an invitation link via email.
-          </span>
+
+          <!-- File Upload Section -->
+          <div id="file-upload-section" class="form-group">
+            <label for="file" class="form-label">Volunteer File (CSV or Excel)</label>
+            <input type="file" 
+                   id="file" 
+                   name="file" 
+                   accept=".csv,.xlsx,.xls"
+                   class="form-input">
+            <span class="form-help">
+              Upload a CSV or Excel file with an <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">Email</code> or <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">email</code> column. Optionally include a <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">Name</code> or <code style="background: var(--color-gray-100); padding: 2px 6px; border-radius: 3px; font-size: 0.875em;">name</code> column. Volunteers will receive invitation links via email.
+            </span>
+          </div>
+
+          <!-- Manual Entry Section -->
+          <div id="manual-entry-section" class="form-group" style="display: none;">
+            <label class="form-label">Volunteer List</label>
+            <div id="volunteers-container">
+              <div class="volunteer-entry" style="display: flex; gap: var(--space-3); align-items: end; margin-bottom: var(--space-3);">
+                <div style="flex: 1;">
+                  {{ ui.form_input(
+                    name='volunteer_names[]',
+                    label='Name',
+                    type='text',
+                    placeholder='John Doe',
+                    help_text='Volunteer full name'
+                  ) }}
+                </div>
+                <div style="flex: 1;">
+                  {{ ui.form_input(
+                    name='volunteer_emails[]',
+                    label='Email',
+                    type='email',
+                    placeholder='john.doe@auib.edu',
+                    help_text='Volunteer email address'
+                  ) }}
+                </div>
+                <button type="button" class="btn btn--outline btn--sm" onclick="removeVolunteer(this)" style="margin-bottom: var(--space-2);">
+                  <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <button type="button" class="btn btn--secondary btn--sm" onclick="addVolunteer()">
+              <svg style="width: 1rem; height: 1rem; margin-right: var(--space-2);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Another Volunteer
+            </button>
+            <span class="form-help" style="display: block; margin-top: var(--space-2);">
+              Add volunteers manually. Each volunteer will receive an invitation link via email.
+            </span>
+          </div>
         </div>
       </div>
 
@@ -261,7 +283,7 @@
           <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          Create Event & Send Invitations
+          <span id="submit-button-text">Create Event</span>
         </button>
       </div>
     </form>
@@ -368,7 +390,32 @@ function toggleAdvancedOptions() {
   }
 }
 
+function toggleVolunteerInvitations() {
+  const checkbox = document.getElementById('invite_volunteers');
+  const invitationSection = document.getElementById('volunteer-invitation-section');
+  const fileInput = document.getElementById('file');
+  const submitButtonText = document.getElementById('submit-button-text');
+  
+  if (checkbox.checked) {
+    invitationSection.style.display = 'block';
+    submitButtonText.textContent = 'Create Event & Send Invitations';
+    // Update required fields based on entry method
+    toggleEntryMethod();
+  } else {
+    invitationSection.style.display = 'none';
+    submitButtonText.textContent = 'Create Event';
+    // Remove required from volunteer fields
+    if (fileInput) fileInput.required = false;
+    document.querySelectorAll('input[name="volunteer_names[]"], input[name="volunteer_emails[]"]').forEach(input => {
+      input.required = false;
+    });
+  }
+}
+
 function toggleEntryMethod() {
+  const inviteCheckbox = document.getElementById('invite_volunteers');
+  if (!inviteCheckbox || !inviteCheckbox.checked) return; // Don't set required if invitations are disabled
+  
   const method = document.querySelector('input[name="entry_method"]:checked').value;
   const fileSection = document.getElementById('file-upload-section');
   const manualSection = document.getElementById('manual-entry-section');
@@ -444,7 +491,10 @@ function removeVolunteer(button) {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-  toggleEntryMethod();
+  const inviteCheckbox = document.getElementById('invite_volunteers');
+  if (inviteCheckbox && inviteCheckbox.checked) {
+    toggleEntryMethod();
+  }
 });
 </script>
 {% endblock %}

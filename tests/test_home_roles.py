@@ -1,5 +1,5 @@
 import os
-import tempfile
+import pytest
 from Backend import create_app
 from Backend.db import get_db
 from Backend.models import gen_id
@@ -15,9 +15,15 @@ def make_user(db, email, role):
     return u
 
 
-def test_home_pages_for_roles(tmp_path, monkeypatch):
-    db_file = tmp_path / 'test.db'
-    os.environ['DATABASE_URL'] = f"sqlite:///{db_file}"
+def test_home_pages_for_roles():
+    """
+    Test home pages for different roles using PostgreSQL.
+    Requires DATABASE_URL environment variable to be set to a PostgreSQL test database.
+    Example: postgresql://user:password@localhost:5432/vms_test
+    """
+    if 'DATABASE_URL' not in os.environ or not os.environ['DATABASE_URL'].startswith('postgresql'):
+        pytest.skip("PostgreSQL DATABASE_URL required for tests")
+    
     app = create_app()
     app.config['TESTING'] = True
     client = app.test_client()

@@ -58,7 +58,16 @@ def create_app():
     app.config['JWT_SECRET'] = os.environ.get('VMS_JWT_SECRET', 'jwt-secret')
     app.config['JWT_ALGORITHM'] = os.environ.get('VMS_JWT_ALGORITHM', 'HS256')
     app.config['JWT_EXP_HOURS'] = int(os.environ.get('VMS_JWT_EXP_HOURS', '24'))
-    app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL', f"sqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'vms.db'))}")
+    
+    # PostgreSQL database configuration (required)
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url:
+        raise ValueError(
+            "DATABASE_URL environment variable is required. "
+            "Please set it to your PostgreSQL connection string, e.g.: "
+            "postgresql://user:password@localhost:5432/vms"
+        )
+    app.config['DATABASE_URL'] = database_url
 
     # Mail configuration (optional)
     app.config['MAIL_SERVER'] = os.environ.get('SMTP_HOST')
@@ -145,8 +154,12 @@ def create_app():
         except Exception:
             return str(value) if value else '—'
 
-    # seed users (idempotent)
-    seed_sample_users()
+    # seed users (idempotent) - handle race condition with multiple workers
+    try:
+        seed_sample_users()
+    except Exception as e:
+        # Race condition when multiple workers try to seed simultaneously - safe to ignore
+        app.logger.info(f'Seed users skipped (already seeded or race condition): {e}')
 
     # initialize email subsystem if available
     try:

@@ -14,6 +14,8 @@ class User(Base):
     role = Column(String, nullable=False)
     name = Column(String)
     club_id = Column(String, nullable=True)
+    student_status = Column(String, nullable=True)  # ASP or UG
+    cgpa = Column(Float, nullable=True)  # Current CGPA
 
     def get_id(self):
         return self.id
@@ -117,10 +119,12 @@ def seed_sample_users():
     # if any users exist, assume seeded
     if db.query(User).first():
         return
-    u1 = User(id=gen_id('u_'), email='officer@auib.edu', password_hash=generate_password_hash('officerpass'), role='officer', name='Officer One')
-    u2 = User(id=gen_id('u_'), email='leader@club.auib', password_hash=generate_password_hash('leaderpass'), role='club_leader', name='Leader One', club_id=gen_id('club_'))
-    u3 = User(id=gen_id('u_'), email='student@auib.edu', password_hash=generate_password_hash('studentpass'), role='student', name='Student One')
-    db.add_all([u1, u2, u3])
+    u1 = User(id=gen_id('u_'), email='officer@auib.edu', password_hash=generate_password_hash('officer123'), role='officer', name='Officer One')
+    u2 = User(id=gen_id('u_'), email='leader@club.auib', password_hash=generate_password_hash('leader123'), role='club_leader', name='Leader One', club_id=gen_id('club_'))
+    u3 = User(id=gen_id('u_'), email='student@auib.edu', password_hash=generate_password_hash('student123'), role='student', name='Student One')
+    u4 = User(id=gen_id('u_'), email='admin@auib.edu', password_hash=generate_password_hash('admin123'), role='admin', name='Admin One')
+
+    db.add_all([u1, u2, u3, u4])
     db.commit()
 
 
@@ -193,6 +197,8 @@ class TimeLog(Base):
     calculated_hours = Column(Float)
     status = Column(String, default='PENDING')
     marker = Column(String, nullable=True)
+    cgpa = Column(Float, nullable=True)
+    student_status = Column(String, nullable=True)  # 'ASP' or 'UG'
 
 
 class BulkSubmission(Base):

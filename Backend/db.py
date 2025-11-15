@@ -8,20 +8,16 @@ SessionLocal = None
 def init_db(app):
     global SessionLocal
     db_url = app.config.get('DATABASE_URL')
-    # Allow optional tuning of the SQLAlchemy QueuePool via app config.
-    # Reasonable defaults mirror SQLAlchemy's defaults (pool_size=5, max_overflow=10).
-    pool_opts = {}
-    # Only pass pool sizing options for DBs that support them (not necessary for SQLite file DB)
-    if not db_url.startswith('sqlite'):
-        pool_opts['pool_size'] = int(app.config.get('DB_POOL_SIZE', 5))
-        pool_opts['max_overflow'] = int(app.config.get('DB_MAX_OVERFLOW', 10))
-        pool_opts['pool_timeout'] = int(app.config.get('DB_POOL_TIMEOUT', 30))
-        # help detect stale connections
-        pool_opts['pool_pre_ping'] = True
+    
+    # PostgreSQL connection pool configuration
+    pool_opts = {
+        'pool_size': int(app.config.get('DB_POOL_SIZE', 10)),
+        'max_overflow': int(app.config.get('DB_MAX_OVERFLOW', 20)),
+        'pool_timeout': int(app.config.get('DB_POOL_TIMEOUT', 60)),
+        'pool_pre_ping': True  # detect stale connections
+    }
 
-    engine = create_engine(db_url,
-                           connect_args={'check_same_thread': False} if db_url.startswith('sqlite') else {},
-                           **pool_opts)
+    engine = create_engine(db_url, **pool_opts)
     SessionLocal = scoped_session(sessionmaker(bind=engine))
 
     # import models and create tables
@@ -60,13 +56,47 @@ def init_db(app):
                                 continue
                             try:
                                 dt = _dt.datetime.fromisoformat(raw)
-                                # write ISO string into start_ts (SQLite stores as text)
+                                # write ISO string into start_ts
                                 conn.execute(text('UPDATE events SET start_ts = :st WHERE id = :id'), {'st': dt.isoformat(), 'id': eid})
                             except Exception:
                                 # ignore parse errors and leave as-is
                                 pass
                     except Exception:
                         app.logger.info('No legacy date values to migrate or migration failed')
+        
+        # Add student_status and cgpa columns to users table if missing
+        if 'users' in insp.get_table_names():
+            user_cols = [c['name'] for c in insp.get_columns('users')]
+            with engine.begin() as conn:
+                if 'student_status' not in user_cols:
+                    try:
+                        conn.execute(text('ALTER TABLE users ADD COLUMN student_status VARCHAR'))
+                        app.logger.info('Added student_status column to users table')
+                    except Exception:
+                        app.logger.info('Could not add student_status column to users (may not be supported by this DB)')
+                if 'cgpa' not in user_cols:
+                    try:
+                        conn.execute(text('ALTER TABLE users ADD COLUMN cgpa FLOAT'))
+                        app.logger.info('Added cgpa column to users table')
+                    except Exception:
+                        app.logger.info('Could not add cgpa column to users (may not be supported by this DB)')
+        
+        # Add student_status and cgpa columns to timelogs table if missing
+        if 'timelogs' in insp.get_table_names():
+            timelog_cols = [c['name'] for c in insp.get_columns('timelogs')]
+            with engine.begin() as conn:
+                if 'student_status' not in timelog_cols:
+                    try:
+                        conn.execute(text('ALTER TABLE timelogs ADD COLUMN student_status VARCHAR'))
+                        app.logger.info('Added student_status column to timelogs table')
+                    except Exception:
+                        app.logger.info('Could not add student_status column to timelogs (may not be supported by this DB)')
+                if 'cgpa' not in timelog_cols:
+                    try:
+                        conn.execute(text('ALTER TABLE timelogs ADD COLUMN cgpa FLOAT'))
+                        app.logger.info('Added cgpa column to timelogs table')
+                    except Exception:
+                        app.logger.info('Could not add cgpa column to timelogs (may not be supported by this DB)')
     except Exception:
         try:
             app.logger.exception('Automatic DB migration check failed')
