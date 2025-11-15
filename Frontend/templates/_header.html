@@ -2,21 +2,27 @@
   <div class="header__inner">
     <!-- Logo -->
     <a href="{{ url_for('auth.home_page') }}" class="header__logo">
-      <i class="fas fa-users" style="width: 2rem; height: 2rem; display: inline-block; vertical-align: middle; margin-right: 0.5rem; font-size: 2rem;"></i>
-      <span style="display: inline-block; vertical-align: middle;">
-        <span style="display: block; font-size: var(--text-lg); font-weight: var(--font-bold);">AUIB VMS</span>
-        <span style="display: block; font-size: var(--text-xs); color: var(--color-gray-600);">Volunteer Management System</span>
-      </span>
+      <i class="fas fa-users header__logo-icon"></i>
+      <div class="header__logo-text">
+        <span class="header__logo-title">AUIB VMS</span>
+        <span class="header__logo-subtitle">Volunteer Management</span>
+      </div>
     </a>
 
+    <!-- Mobile Menu Toggle -->
+    <button class="header__menu-toggle" 
+            id="mobile-menu-toggle" 
+            aria-label="Toggle menu"
+            aria-expanded="false">
+      <i class="fas fa-bars" style="font-size: 1.25rem;"></i>
+    </button>
 
-
-    <!-- Actions (Auth + Admin Preview) -->
-    <div class="header__actions">
+    <!-- Desktop Actions -->
+    <div class="header__actions md:flex">
       {% if current_user.is_authenticated %}
-        {# Admin-only preview controls: visible to admins (current_user.role) only #}
+        {# Admin-only preview controls #}
         {% if current_user.role == 'admin' %}
-          <div style="display: flex; align-items: center; gap: var(--space-2);">
+          <div class="flex items-center gap-2 sm:hidden md:flex">
             {% if is_viewing_as %}
               <form method="post" action="{{ url_for('admin.stop_view_as') }}" style="margin: 0;">
                 <button type="submit" class="btn btn--warning btn--sm">
@@ -24,7 +30,7 @@
                 </button>
               </form>
             {% else %}
-              <form method="post" action="{{ url_for('admin.view_as') }}" style="display: flex; align-items: center; gap: var(--space-2); margin: 0;">
+              <form method="post" action="{{ url_for('admin.view_as') }}" class="flex items-center gap-2" style="margin: 0;">
                 <label for="view_as_role" class="sr-only">Preview as role</label>
                 <select id="view_as_role" name="role" class="form-select" style="font-size: var(--text-sm); padding: var(--space-2) var(--space-3); width: auto;">
                   <option value="student">Student</option>
@@ -39,9 +45,11 @@
         {% endif %}
 
         <!-- User Info & Logout -->
-        <div style="display: flex; align-items: center; gap: var(--space-3);">
+        <div class="flex items-center gap-3 sm:hidden md:flex flex-wrap">
           <span class="badge badge--primary" style="font-size: var(--text-sm);">
-            {{ current_user.email }} ({{ current_user.role }})
+            <span class="sm:hidden">{{ current_user.email[:15] }}...</span>
+            <span class="hidden sm:inline">{{ current_user.email }}</span>
+            ({{ current_user.role }})
           </span>
           <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost btn--sm">Logout</a>
         </div>
@@ -52,3 +60,113 @@
     </div>
   </div>
 </header>
+
+<!-- Mobile Menu Overlay -->
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu__panel">
+    <div class="mobile-menu__header">
+      <span style="font-weight: var(--font-bold); color: var(--color-primary-600);">Menu</span>
+      <button class="mobile-menu__close" 
+              id="mobile-menu-close" 
+              aria-label="Close menu">
+        <i class="fas fa-times" style="font-size: 1.25rem;"></i>
+      </button>
+    </div>
+    <div class="mobile-menu__body">
+      {% if current_user.is_authenticated %}
+        <!-- User Info Section -->
+        <div class="mobile-menu__section">
+          <span class="mobile-menu__label">Account</span>
+          <div class="card" style="padding: var(--space-3);">
+            <p style="font-size: var(--text-sm); font-weight: var(--font-medium); color: var(--color-gray-900); margin-bottom: var(--space-1);">
+              {{ current_user.email }}
+            </p>
+            <p style="font-size: var(--text-xs); color: var(--color-gray-600); margin-bottom: 0;">
+              Role: {{ current_user.role }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Admin Preview Controls (Mobile) -->
+        {% if current_user.role == 'admin' %}
+          <div class="mobile-menu__section">
+            <span class="mobile-menu__label">Admin Controls</span>
+            {% if is_viewing_as %}
+              <form method="post" action="{{ url_for('admin.stop_view_as') }}">
+                <button type="submit" class="btn btn--warning btn--full">
+                  Stop Viewing as {{ view_as_role }}
+                </button>
+              </form>
+            {% else %}
+              <form method="post" action="{{ url_for('admin.view_as') }}">
+                <div class="form-group">
+                  <label for="mobile_view_as_role" class="form-label">Preview as role</label>
+                  <select id="mobile_view_as_role" name="role" class="form-select">
+                    <option value="student">Student</option>
+                    <option value="officer">Officer</option>
+                    <option value="club_leader">Club Leader</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn--primary btn--full">Preview</button>
+              </form>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="mobile-menu__section">
+          <a href="{{ url_for('auth.logout') }}" class="btn btn--outline btn--full">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </a>
+        </div>
+      {% else %}
+        <div class="mobile-menu__section">
+          <a href="{{ url_for('auth.login') }}" class="btn btn--outline btn--full mb-3">Login</a>
+          <a href="{{ url_for('auth.register') }}" class="btn btn--primary btn--full">Register</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  // Mobile menu toggle
+  (function() {
+    const menuToggle = document.getElementById('mobile-menu-toggle');
+    const menuClose = document.getElementById('mobile-menu-close');
+    const mobileMenu = document.getElementById('mobile-menu');
+    
+    if (menuToggle && mobileMenu) {
+      menuToggle.addEventListener('click', function() {
+        const isOpen = mobileMenu.classList.contains('is-open');
+        if (isOpen) {
+          mobileMenu.classList.remove('is-open');
+          menuToggle.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+        } else {
+          mobileMenu.classList.add('is-open');
+          menuToggle.setAttribute('aria-expanded', 'true');
+          document.body.style.overflow = 'hidden';
+        }
+      });
+      
+      if (menuClose) {
+        menuClose.addEventListener('click', function() {
+          mobileMenu.classList.remove('is-open');
+          menuToggle.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+        });
+      }
+      
+      // Close on backdrop click
+      mobileMenu.addEventListener('click', function(e) {
+        if (e.target === mobileMenu) {
+          mobileMenu.classList.remove('is-open');
+          menuToggle.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+        }
+      });
+    }
+  })();
+</script>

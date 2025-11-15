@@ -7,17 +7,21 @@
 
 :root {
   /* ========== Color System ========== */
-  /* Primary (AUIB Blue) */
-  --color-primary-50: #e0f2fe;
-  --color-primary-100: #bae6fd;
-  --color-primary-200: #7dd3fc;
-  --color-primary-300: #38bdf8;
-  --color-primary-400: #0ea5e9;
-  --color-primary-500: #0b78a1; /* AUIB accent */
-  --color-primary-600: #0b4f6c; /* AUIB main blue */
-  --color-primary-700: #0c4a6e;
-  --color-primary-800: #075985;
-  --color-primary-900: #0c4a6e;
+  /* AUIB Brand Colors */
+  --color-brand-main: #9c213f;  /* Primary brand (crimson) */
+  --color-brand-accent: #273237; /* Accent (deep slate) */
+
+  /* Primary (mapped to AUIB brand) */
+  --color-primary-50:  #fbf0f2;
+  --color-primary-100: #f7e6ea; /* used for focus rings */
+  --color-primary-200: #f1cdd6;
+  --color-primary-300: #e38ea2;
+  --color-primary-400: #cc5e77;
+  --color-primary-500: #b42a4a; /* lighter than brand main */
+  --color-primary-600: var(--color-brand-main); /* AUIB main */
+  --color-primary-700: #7f1932; /* hover/darker */
+  --color-primary-800: #611528;
+  --color-primary-900: #4a0d1c;
 
   /* Neutral Grays */
   --color-gray-50: #f9fafb;
