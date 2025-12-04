@@ -34,7 +34,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">{{ ticket.title }}</h5>
                         {% if current_user.role == 'officer' and ticket.status != 'resolved' %}
-                        <div class="btn-group" role="group">
+                        <div class="d-flex flex-wrap gap-2 button-group">
                             {% if ticket.status == 'open' %}
                             <form method="POST" action="{{ url_for('tickets.assign', ticket_id=ticket.id) }}" class="d-inline">
                                 <button type="submit" class="btn btn-sm btn-outline-primary">
@@ -171,9 +171,11 @@
                                 </label>
                             </div>
                             {% endif %}
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-reply"></i> Add Response
-                            </button>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-reply"></i> Add Response
+                                </button>
+                            </div>
                         </form>
 
                         <!-- Attachment Upload Form -->
@@ -188,9 +190,11 @@
                                         Allowed: txt, pdf, images, documents, spreadsheets, zip. Max 10MB.
                                     </small>
                                 </div>
-                                <button type="submit" class="btn btn-outline-secondary btn-sm">
-                                    <i class="fas fa-upload"></i> Upload Attachment
-                                </button>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-upload"></i> Upload Attachment
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>

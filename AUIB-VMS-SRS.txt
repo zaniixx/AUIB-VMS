@@ -1,0 +1,276 @@
+_________________________________________________________________________________________
+AUIB VOLUNTEER MANAGEMENT SYSTEM (VMS)
+SOFTWARE REQUIREMENTS SPECIFICATION (SRS)
+Prepared by: GitHub Copilot (GPT-5.1-Codex Preview)
+Date: 2025-11-29
+_________________________________________________________________________________________
+
+Table of Contents...........................................................................................................................ii
+Revision History.............................................................................................................................ii
+1. Introduction..............................................................................................................................1
+1.1 Purpose..............................................................................................................................................1
+1.2 Document Conventions.....................................................................................................................1
+1.3 Intended Audience and Reading Suggestions...................................................................................1
+1.4 Project Scope ....................................................................................................................................1
+1.5 References.........................................................................................................................................1
+2. Overall Description..................................................................................................................2
+2.1 Product Perspective...........................................................................................................................2
+2.2 Product Features................................................................................................................................2
+2.3 User Classes and Characteristics ......................................................................................................2
+2.4 Operating Environment.....................................................................................................................2
+2.5 Design and Implementation Constraints ...........................................................................................2
+2.6 User Documentation .........................................................................................................................2
+2.7 Assumptions and Dependencies .......................................................................................................3
+3. System Features .......................................................................................................................3
+3.1 System Feature 1...............................................................................................................................3
+3.2 System Feature 2 (and so on)............................................................................................................4
+4. External Interface Requirements ...........................................................................................4
+4.1 User Interfaces ..................................................................................................................................4
+4.2 Hardware Interfaces ..........................................................................................................................4
+4.3 Software Interfaces ...........................................................................................................................4
+4.4 Communications Interfaces ..............................................................................................................4
+5. Other Nonfunctional Requirements.......................................................................................5
+5.1 Performance Requirements ...............................................................................................................5
+5.2 Safety Requirements .........................................................................................................................5
+5.3 Security Requirements ......................................................................................................................5
+5.4 Software Quality Attributes ..............................................................................................................5
+6. Other Requirements ................................................................................................................5
+Appendix A: Glossary ...................................................................................................................5
+Appendix B: Analysis Models .......................................................................................................6
+Appendix C: Issues List.................................................................................................................6
+
+Revision History
+Name                                      Date         Reason For Changes                                              Version
+GitHub Copilot (GPT-5.1-Codex Preview)   2025-11-29   Initial SRS aligned with repo content and template            0.1
+GitHub Copilot (GPT-5.1-Codex Preview)   2025-11-29   Reformatted per requested TOC; added appendices/issues       0.2
+
+1. Introduction......................................................................................................................................1
+1.1 Purpose
+This document defines the complete Software Requirements Specification for the AUIB Volunteer Management System (VMS), a Flask/PostgreSQL platform that coordinates university volunteer operations. It is the contractual reference for engineering, QA, operations, procurement, and compliance teams.
+
+1.2 Document Conventions
+- Section headings follow IEEE-style numbering (1, 1.1, 1.1.1).
+- SHALL indicates mandatory behavior; SHOULD indicates recommended behavior.
+- File paths are rendered in monospace (e.g., `Backend/officer.py`).
+- Page indicators from the template are retained as dot leaders for familiarity; actual pagination follows repository viewers.
+
+1.3 Intended Audience and Reading Suggestions
+- Product Owners & Stakeholders: Sections 1–2 for scope/context; Section 6 for constraints.
+- Engineers: Sections 2–5 for functionality and interfaces; Appendices for models.
+- QA/Testers: Section 3 for feature breakdown; Appendix C for open issues.
+- DevOps/SRE: Sections 2.4, 2.5, 5 for environment and operational targets.
+
+1.4 Project Scope
+The VMS covers authentication, event scheduling, volunteer tracking via JWT links, club leader bulk reporting, officer approvals, administrative oversight, ticketing, reporting, and deployment tooling (Docker, manage.py scripts). It supports production and demo environments outlined in `README.md`.
+
+1.5 References
+- Repository README (`README.md`).
+- UML documentation (`docs/UML-UseCases.md`, `docs/diagrams/*`).
+- Backend implementation (`Backend/*.py`).
+- Frontend templates (`Frontend/templates/*`).
+- Automated tests (`tests/*.py`).
+- Deployment assets (`docker-compose.yml`, `demo/docker-compose.demo.yml`, `Dockerfile`).
+
+2. Overall Description...........................................................................................................................2
+2.1 Product Perspective
+AUIB-VMS is a multi-tier web solution composed of:
+- Backend Flask factory (`Backend/__init__.py`) with blueprints (auth, officer, club, admin, log, tickets) and SQLAlchemy ORM models.
+- Frontend Jinja2 templates plus modular CSS/JS assets under `Frontend/static`.
+- PostgreSQL schema seeded by `demo/seed_data.py`, orchestrated through SQLAlchemy sessions (`Backend/db.py`).
+- Integrations: SMTP via Flask-Mailman, JWT-based deep links, Dockerized runtime, CSV/JSON import/export.
+
+2.2 Product Features
+- Secure authentication, session handling, and role-based routing.
+- Event creation, volunteer enrollment, JWT link management.
+- Volunteer-facing time logging flows with automated hour calculations.
+- Club leader bulk submissions and officer approval workflows.
+- Ticketing system with attachments, priorities, and internal notes.
+- Reporting dashboards with CSV exports and filters.
+- Administrative consoles for user, settings, email, and audit management.
+
+2.3 User Classes and Characteristics
+- Guest: Access to login/registration only.
+- Volunteer/Student: Uses JWT links and dashboards to view/submit hours.
+- Club Leader: Submits bulk hours, toggles view-as roles.
+- Officer: Manages events, approvals, reports, and tickets.
+- Admin: Full-control role with ability to impersonate other roles.
+- Support Staff: Officer/Admin subset focusing on ticket triage.
+
+2.4 Operating Environment
+- Python 3.11+, Flask, SQLAlchemy 2.x, PostgreSQL 15+, Docker 24+.
+- Modern browsers (Chromium, Firefox, Safari) over HTTPS.
+- SMTP servers supporting TLS/SSL (Gmail, Outlook, institutional providers).
+
+2.5 Design and Implementation Constraints
+- `DATABASE_URL` required at startup; app halts if missing.
+- PostgreSQL usage prevents SQLite fallbacks.
+- JWT expiration defaults to 24 hours; environment overrides allowed.
+- Ticket attachments must comply with configured storage paths/limits.
+- Dependency set defined in `requirements.txt` (Flask-Login, Flask-Mailman, Pandas, etc.).
+
+2.6 User Documentation
+- README quick-start for Docker demo, local dev, and production deployment.
+- `docs/UML-UseCases.md` describing workflows for each persona.
+- Inline admin UI help (e.g., email configuration testing panel) and officer tooltips.
+- Scripts (`scripts/generate_project_overview.py`) for repository inventory reference.
+
+2.7 Assumptions and Dependencies
+- All official users possess `@auib.edu` emails; regex enforcement in models.
+- SMTP credentials available for production; otherwise fall back to logging-only mode.
+- Docker networking and volumes available for deployments.
+- Server clocks synchronized to maintain accurate hour calculations.
+
+3. System Features..............................................................................................................................3
+Each feature includes goal, triggers, main flow, and references to implementation artifacts.
+
+3.1 System Feature 1 – Authentication & Session Management
+- Goal: Provide secure authentication, password reset, and role-aware home routing.
+- Description: `Backend/auth.py`, templates `login.html`, `register.html`, `auth/forgot.html`, `auth/reset.html`.
+- Functional Requirements:
+  1. Provide login/logout endpoints guarded by Flask-Login.
+  2. Enforce role-based redirects via `auth.home_page`.
+  3. Issue password reset tokens delivered via email (or logged fallback).
+  4. Render friendly 403/404/500 templates for unauthorized or error states.
+
+3.2 System Feature 2 – Role Dashboards & View-As Controls
+- Goal: Deliver tailored dashboards and limited impersonation for admins/club leaders.
+- Description: Context processor in `Backend/__init__.py` surfaces `effective_role`, pending counts, and view-as state.
+- Functional Requirements:
+  1. Render `home_admin.html`, `home_officer.html`, `home_clubleader.html`, `home_volunteer.html`, or `home_guest.html` based on role.
+  2. Allow admins to view any role; club leaders can toggle between student/club leader.
+  3. Show aggregated pending counts (timelogs, event requests, bulk submissions) for officers.
+
+3.3 System Feature 3 – Event Management & Volunteer Links
+- Goal: Enable officers to create/manage events and distribute JWT-based volunteer links.
+- Description: `Backend/officer.py`, templates `create_event.html`, `manage_events.html`, `event_volunteers.html`.
+- Functional Requirements:
+  1. Capture event metadata (schedule, capacity, contacts, required skills, equipment, min/max age, priority).
+  2. Upload volunteer rosters via CSV/JSON or manual entry to generate unique JWT links.
+  3. Provide roster exports and attendance trackers.
+  4. Optionally dispatch links via email subsystem, logging outcomes in `email_logs`.
+
+3.4 System Feature 4 – Volunteer JWT Time Logging
+- Goal: Allow volunteers to clock hours without authentication using signed links.
+- Description: `Backend/log.py`, template `log.html`, models `TimeLog`.
+- Functional Requirements:
+  1. Issue JWT containing volunteer email, event ID, issue/expiry timestamps.
+  2. Start action records `start_ts`; stop action computes hours and sets `stop_ts`.
+  3. Reject expired/tampered tokens and surface warning page.
+  4. Queue timelog entries for officer approval.
+
+3.5 System Feature 5 – Bulk Submission & Approval Workflow
+- Goal: Let club leaders submit hours for multiple members and officers approve granularly.
+- Description: `Backend/club.py`, `Backend/officer.py`, templates `pending_timelogs.html`, `my_submissions.html`.
+- Functional Requirements:
+  1. Persist submissions in `bulk_submissions` and detailed rows in `bulk_submission_entries`.
+  2. Support statuses `PENDING`, `APPROVED`, `REJECTED`, `PARTIALLY_APPROVED` with rejection reasons.
+  3. Notify submitters of outcomes via dashboard views (email optional).
+
+3.6 System Feature 6 – Reporting & Analytics
+- Goal: Provide CSV exports and lifecycle insights for officers/admins.
+- Description: `/officer/reports`, templates `reports.html`, Pandas utilities for CSV creation.
+- Functional Requirements:
+  1. Offer report types (General, Person Summary, Person Detailed) with filters.
+  2. Deliver downloads within 5 seconds for ≤50k entries.
+  3. Respect role-based access (officers/admins only).
+
+3.7 System Feature 7 – Email & Notification Settings
+- Goal: Centralize SMTP configuration and delivery tracking.
+- Description: `Backend/admin.py`, models `Setting`, `SettingAudit`, `EmailLog`, templates `admin/settings.html`, `admin/email_logs.html`.
+- Functional Requirements:
+  1. Persist SMTP settings with audit trail and cache invalidation.
+  2. Display email logs with status filtering and resend actions.
+  3. Provide inline test form to validate SMTP credentials.
+
+3.8 System Feature 8 – Ticketing & Support Desk
+- Goal: Capture and resolve support tickets with attachments and internal notes.
+- Description: `Backend/tickets.py`, templates `tickets/*.html`, JS modules `ticket-ui.js`, `file-upload.js`.
+- Functional Requirements:
+  1. Create tickets categorized as suggestion/problem/bug/feature/general with priority levels.
+  2. Allow officers/admins to respond, add internal notes, upload attachments, and reassign tickets.
+  3. Maintain ticket/attachment records with timestamps and status transitions (`open`, `in_progress`, `resolved`, `closed`).
+
+3.9 System Feature 9 – Administration & User Management
+- Goal: Provide full administrative oversight of users, settings, and audit history.
+- Description: Templates under `Frontend/templates/admin/`, models `User`, `SettingAudit`.
+- Functional Requirements:
+  1. CRUD operations for users segmented by role.
+  2. Settings forms covering DB pool sizes, JWT expiry, email defaults.
+  3. History view showing change actor/time/value.
+
+3.10 System Feature 10 – Deployment & Operations Tooling
+- Goal: Ensure reproducible environments for demo, development, and production.
+- Description: `docker-compose.yml`, `demo/docker-compose.demo.yml`, `Dockerfile`, `manage.py`, scripts folder.
+- Functional Requirements:
+  1. Provide Docker-based demo with seeded data at port 8000.
+  2. Offer manage.py commands for init-db, seed, runserver, shell.
+  3. Supply repository inventory script (`scripts/generate_project_overview.py`) for audits.
+
+4. External Interface Requirements......................................................................................................4
+4.1 User Interfaces
+- Responsive HTML templates with shared layout macros (`Frontend/templates/layout/*.html`).
+- Dashboards show pending counts, cards, tables, and modal forms with inline validation.
+- Volunteer view prioritizes Start/Stop CTAs; officer/admin views include filter panels and CSV buttons.
+
+4.2 Hardware Interfaces
+- Runs on commodity x86_64 servers or cloud instances capable of Docker/PostgreSQL workloads; no dedicated hardware interfaces.
+
+4.3 Software Interfaces
+- PostgreSQL 15 via SQLAlchemy, connection string in `DATABASE_URL`.
+- SMTP integration via Flask-Mailman (TLS/SSL support).
+- File storage for ticket attachments within server filesystem or mounted volume.
+
+4.4 Communications Interfaces
+- HTTPS recommended (TLS termination via reverse proxy or cloud load balancer).
+- Email transport secured via STARTTLS or SMTPS.
+- JWT links distributed via email, messaging apps, or LMS portals.
+
+5. Other Nonfunctional Requirements.................................................................................................5
+5.1 Performance Requirements
+- ≥200 concurrent JWT validations/min with ≤1s median response.
+- CSV report generation ≤5s for ≤50k timelog rows when indices present.
+
+5.2 Safety Requirements
+- Graceful degradation when SMTP or database unavailable (log errors, prevent data corruption).
+- Hour logging safeguards to prevent overlapping sessions per volunteer.
+
+5.3 Security Requirements
+- Password hashing via Werkzeug; JWT secrets sourced from env vars (`VMS_SECRET_KEY`, `VMS_JWT_SECRET`).
+- Role-based guards on all blueprints; unauthorized access returns 403.
+- Input validation on CSV/JSON uploads (email regex, positive hours, file-type filtering).
+
+5.4 Software Quality Attributes
+- Maintainability: Blueprint/module separation, scriptable setup, automated tests.
+- Usability: Consistent UI macros, pending counters, simple volunteer flows.
+- Reliability: DB session teardown per request, Docker health checks.
+- Portability: Works across Windows/macOS/Linux hosts with Docker or Python.
+
+6. Other Requirements..........................................................................................................................5
+- Data entities, validation, retention, and backup expectations:
+  • Users, Events, Timelogs, Bulk Submissions, Tickets, Settings, Email Logs defined in `Backend/models.py`.
+  • Emails restricted to `@auib.edu` by default; CGPA/student status optional but validated when present.
+  • Retain timelogs/bulk submissions/tickets ≥5 academic years; email logs ≥12 months.
+  • Schedule PostgreSQL backups and include Docker volumes in disaster-recovery scope.
+- Business rules & constraints:
+  • Only officers/admins approve hours; club leaders cannot self-approve.
+  • JWT links unique per volunteer/event; flagged duplicates reviewed by officers.
+  • Event volunteer limit enforced with override confirmation.
+  • SMTP setting updates flush cached SMTP connections via `Backend/email.py`.
+
+Appendix A: Glossary............................................................................................................................5
+- Bulk Submission: Batch of volunteer hours submitted by a club leader for officer approval.
+- Timelog: Individual volunteer service record awaiting approval.
+- JWT Link: Signed URL allowing volunteers to clock time without logging in.
+- View-As Mode: Admin/club-leader ability to preview dashboards as other roles.
+- Officer Dashboard: Role-specific UI summarizing pending approvals, events, and reports.
+
+Appendix B: Analysis Models...............................................................................................................6
+- UML/Mermaid diagrams stored in `docs/UML-UseCases.md` and `docs/diagrams/*` (use case, sequence, component, deployment, ER models).
+- Flowcharts (`docs/flowchart.mmd`, `docs/flowchart.svg`) depicting volunteer and officer workflows.
+- Diagrams validated after removing Mermaid theme conflicts; instructions embedded in Markdown for GitHub, VS Code, or Mermaid Live preview.
+
+Appendix C: Issues List..........................................................................................................................6
+- Pending Decision: Finalize attachment storage path, quota, and virus scanning approach.
+- Pending Enhancement: Optional email notifications for bulk submission outcomes (currently dashboard-only).
+- Risk: Reliance on environment-provided SMTP; need fallback service or alerting if credentials expire.
+- Open Question: Whether CGPA/student_status should influence automatic eligibility rules (currently informational only).
