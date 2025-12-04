@@ -485,7 +485,7 @@ Contributing
 
 License
 -------
-This project is developed for the American University in Bulgaria.
+This project is developed for the American University in Iraq Baghdad
 
 Contact
 -------
